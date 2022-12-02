@@ -82,17 +82,10 @@ end
     
     configuration "macosx"
         frameworks= "-F /Library/Frameworks/"
-        buildoptions { "-std=c++11 -Wno-deprecated-declarations" }
+        buildoptions { "-std=c++14 -Wno-deprecated-declarations" }
         defines { "GK_MACOS" }
         buildoptions { frameworks }
         linkoptions { frameworks .. " -framework OpenGL -framework SDL2 -framework SDL2_image" }
-    
-    -- force les mac M1 arm a compiler en x86_64 tant que les librairies ne sont pas dispo en arm64... 
-    -- sinon installer les libs arm avec brew et tout compiler en natif
-    configuration { "macosx", "arm64" } 
-        buildoptions { "-target x86_64-apple-macos10.12" }
-        linkoptions { "-target x86_64-apple-macos10.12" }
-    -- oui c'est moche...
     
  -- description des fichiers communs
 gkit_files = { gkit_dir .. "/src/gKit/*.cpp", gkit_dir .. "/src/gKit/*.h" }
@@ -173,6 +166,7 @@ tutos = {
     "tuto_storage_buffer",
     "tuto_storage_texture",
     "min_data",
+    "tuto_compute_buffer",
     "tuto_vertex_compute",
     
     "tuto_rayons",
