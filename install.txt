@@ -34,14 +34,14 @@ les librairies et premake4/5 sont regroupées dans une archive [disponible ici](
     - dezipper l'archive dans le répertoire de gKit, vous devez obtenir un répertoire `gkit2light/extern`,
     - copiez `extern/premake4.exe` et `extern/premake5.exe` dans le répertoire de gKit.
 
-## mac os
+## mac os 
 
 les librairies sont disponibles :
-    - [sdl2](https://www.libsdl.org/download-2.0.php), section development libraries
-    - [sdl2_image](https://www.libsdl.org/projects/SDL_image/), section development libraries
+    - [sdl2](https://github.com/libsdl-org/SDL/releases), récupérer le fichier SDL2.xxx.dmg
+    - [sdl2_image](https://github.com/libsdl-org/SDL_image/releases), récupérer le fichier SDL2_image.xxx.dmg
     - glew n'est pas necessaire sur mac os.
 
-    - copier le contenu des fichiers .dmg dans `/Library/Frameworks`
+    - copier le contenu des fichiers .dmg dans `/Library/Frameworks`, 
     - copiez [premake](https://premake.github.io/download) dans le répertoire de gKit.
 
 
@@ -212,7 +212,7 @@ configurations générées :
     - windows codeblocks : utilisez la version 32bits, compilez avec `win32`
     - windows visual studio : utilisez la version 64bits, compilez avec `x64`
     - mac os : les frameworks contiennent les 2 versions.
-    - mac os ARM M1 : il y a 2 solutions, demandez à votre encadrant de tp.
+    - mac os ARM M1 : 64bits    
    
 ## erreurs à l'exécution sous windows, fichiers .dll manquants
     - pour visual studio : copiez le contenu de `extern/visual/bin` dans `gkit2light/bin`
@@ -241,8 +241,8 @@ SDL2_image.
 
 avec `g++`, c'est direct :
 \code{bash}
-g++ -o bin/tp1 tp1/*.cpp src/gKit/*.cpp -I src/gKit -lGL -lGLEW -lSDL2 -lSDL2_image
-bin/tp1
+g++ -o tp1 tp1/*.cpp src/gKit/*.cpp -I src/gKit -lGL -lGLEW -lSDL2 -lSDL2_image
+tp1
 \endcode
 
 il faut aussi indiquer dans quel répertoire se trouvent les fichiers `.h` / les headers, cf `-I src/gKit` dans les options de g++.
