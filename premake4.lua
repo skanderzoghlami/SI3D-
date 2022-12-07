@@ -229,14 +229,18 @@ for i, name in ipairs(tutosM2) do
 end
 
 
+project("bench")
+	language "C++"
+	kind "ConsoleApp"
+	targetdir "bin"
+	files ( gkit_files )
+	files { gkit_dir .. "/tutos/bench/bench.cpp" }
+        
 project("gltf")
 	language "C++"
 	kind "ConsoleApp"
 	targetdir "bin"
 	files ( gkit_files )
---~ 	files { gkit_dir .. "/tutos/gltf/cgltf.cpp" }
---~ 	files { gkit_dir .. "/tutos/gltf/gltf.cpp" }
---~ 	files { gkit_dir .. "/tutos/gltf/simple.cpp" }
 	files { gkit_dir .. "/tutos/gltf/viewer.cpp" }
 
 project("simple_gltf")
@@ -244,8 +248,5 @@ project("simple_gltf")
 	kind "ConsoleApp"
 	targetdir "bin"
 	files ( gkit_files )
---~ 	files { gkit_dir .. "/tutos/gltf/cgltf.cpp" }
---~ 	files { gkit_dir .. "/tutos/gltf/gltf.cpp" }
 	files { gkit_dir .. "/tutos/gltf/simple.cpp" }
---~ 	files { gkit_dir .. "/tutos/gltf/viewer.cpp" }
 
