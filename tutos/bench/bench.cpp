@@ -36,7 +36,7 @@ public:
         
         // genere quelques triangles...
         m_mesh= Mesh(GL_TRIANGLES);
-        for(int i= 0; i < 1024*1024*4; i++)
+        for(int i= 0; i < 1024*1024; i++)
         {
             m_mesh.texcoord(0, 0);
             m_mesh.normal(0, 0, 1);
@@ -201,7 +201,8 @@ public:
         for(int i= 0; i < 32; i++)
         {
             glBeginQuery(GL_TIME_ELAPSED, m_time_queries[i]);
-                m_mesh.draw(0, busy_n*3, m_program, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false,  /* use material index */ false);
+                //~ m_mesh.draw(0, busy_n*3, m_program, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false,  /* use material index */ false);
+                m_mesh.draw(0, n*3, m_program, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false,  /* use material index */ false);
             glEndQuery(GL_TIME_ELAPSED);
         }
         
@@ -213,7 +214,8 @@ public:
             glGetQueryObjecti64v(m_time_queries[i], GL_QUERY_RESULT, &gpu_time);
             time+= double(gpu_time) / double(1000000000);
         }
-        time= time / 32 * double(n) / double(busy_n);
+        //~ time= time / 32 * double(n) / double(busy_n);
+        time= time / 32;
 #endif
         
         //~ printf("n %lu gpu  %02dms %03dus %03dns\n", n, int(gpu_time / 1000000), int((gpu_time / 1000) % 1000), int(gpu_time) % 1000);
@@ -261,7 +263,7 @@ public:
         //~ };        
         m_stats.push_back( { 
                 int(gpu_vertices), n, size_t(gpu_fragments),
-                float(gpu_vertices*sizeof(float)*8) / float(1024*1024), float(gpu_samples *8) / float(1024 * 1024), 
+                float(gpu_vertices*sizeof(float)*8) / float(1024*1024), float(gpu_samples *8) / float(1024*1024), 
                 float(gpu_vertices*sizeof(float)*8 / time / (1024*1024)), float(gpu_samples*8 / time / (1024*1024)),
                 float(time * float(1000000)),
                 float(n*3 / time),
@@ -269,7 +271,8 @@ public:
             } );
         
         if(n < busy_n)
-            n= n +128;
+            //~ n= n +256;
+            n= n *2;
         else
             return 0;
             
