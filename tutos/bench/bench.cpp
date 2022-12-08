@@ -21,11 +21,30 @@ struct stat
     float fragment_rate;
 };
 
+
 class TP : public App
 {
 public:
     // constructeur : donner les dimensions de l'image, et eventuellement la version d'openGL.
-    TP( ) : App(512, 512) {}
+    TP( std::vector<const  char *> options ) : App(512, 512)
+    {
+        bool culled= false;
+        const char *filename= "bench.txt";
+        
+        for(unsigned i= 1; i < options.size(); i++)
+        {
+            if(std::string(options[i]) == "--cull" || std::string(options[i]) == "--culled")
+                culled= true;
+            if(std::string(options[i]) == "--fill" || std::string(options[i]) == "--filled")
+                culled= false;
+            if(options[i][0] == '-')
+                if(std::string(options[i]) == "-o" && i+1 < options.size())
+                    filename= options[i+1];
+        }
+        
+        m_culled= culled;
+        m_filename= filename;
+    }
     
     // creation des objets de l'application
     int init( )
@@ -73,8 +92,10 @@ public:
         //~ glDisable(GL_DEPTH_TEST);                    // activer le ztest
         
         glFrontFace(GL_CCW);
-        glCullFace(GL_BACK);
-        //~ glCullFace(GL_FRONT);
+        if(m_culled)
+            glCullFace(GL_FRONT);
+        else
+            glCullFace(GL_BACK);
         glEnable(GL_CULL_FACE);
         
         // transfere les donnees...
@@ -93,10 +114,8 @@ public:
     {
         // exporte les mesures
         {
-            const char *filename= "bench.txt";
-            
-            printf("writing '%s'...\n", filename);
-            FILE *out= fopen(filename, "wt");
+            printf("writing '%s'...\n", m_filename);
+            FILE *out= fopen(m_filename, "wt");
             if(out)
             {
                 for(unsigned i= 0; i < m_stats.size(); i++)
@@ -279,6 +298,8 @@ public:
     }
 
 protected:
+    const char *m_filename;
+    bool m_culled;
     Mesh m_mesh;
     GLuint m_grid_texture;
     GLuint m_vao;
@@ -296,7 +317,7 @@ protected:
 int main( int argc, char **argv )
 {
     // il ne reste plus qu'a creer un objet application et la lancer 
-    TP tp;
+    TP tp(std::vector<const char *>( argv, argv + argc ));
     tp.run();
     
     return 0;
