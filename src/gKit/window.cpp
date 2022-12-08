@@ -12,8 +12,6 @@
 #include <string>
 #include <iostream>
 
-#include <SDL2/SDL_image.h>
-
 #include "glcore.h"
 #include "window.h"
 #include "files.h"
@@ -291,17 +289,6 @@ Window create_window( const int w, const int h, const int major, const int minor
     {
         printf("[error] SDL_CreateWindow() failed.\n");
         return nullptr;
-    }
-
-    // icone
-    {
-        //~ SDL_Surface *icon= IMG_Load( smart_path("data/surprise.png") );
-        SDL_Surface *icon= IMG_Load( smart_path("data/smirk.png") );
-        if(icon)
-        {
-            SDL_SetWindowIcon(window, icon);
-            SDL_FreeSurface(icon);
-        }
     }
     
     // recupere l'etat du clavier

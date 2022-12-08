@@ -1,4 +1,3 @@
-
 #include "vec.h"
 #include "program.h"
 #include "uniforms.h"
