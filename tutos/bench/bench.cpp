@@ -10,13 +10,16 @@
 
 struct stat
 {
-    int vertices;
-    int triangles;
-    size_t vertex_buffer_size;
-    size_t colorz_buffer_size;
-    float vertex_buffer_bw;
+    int vertex;
+    int triangle;
+    size_t fragments;
+    float vertex_buffer_size;  // Mo
+    float colorz_buffer_size;
+    float vertex_buffer_bw;     // Mo/s
     float colorz_buffer_bw;
-    float time_us;
+    float time; // us 
+    float vertex_rate;
+    float fragment_rate;
 };
 
 class TP : public App
@@ -56,6 +59,7 @@ public:
         
         // requete pour mesurer le temps gpu
         glGenQueries(1, &m_query);
+        glGenQueries(32, m_time_queries);
         glGenQueries(1, &m_sample_query);
         glGenQueries(1, &m_fragment_query);
         glGenQueries(1, &m_vertex_query);
@@ -70,8 +74,8 @@ public:
         //~ glDisable(GL_DEPTH_TEST);                    // activer le ztest
         
         glFrontFace(GL_CCW);
-        //~ glCullFace(GL_BACK);
-        glCullFace(GL_FRONT);
+        glCullFace(GL_BACK);
+        //~ glCullFace(GL_FRONT);
         glEnable(GL_CULL_FACE);
         
         // transfere les donnees...
@@ -97,11 +101,12 @@ public:
             if(out)
             {
                 for(unsigned i= 0; i < m_stats.size(); i++)
-                    fprintf(out, "%d %d %lu %lu %f %f %f\n", 
-                        m_stats[i].vertices, m_stats[i].triangles,                                      // 1 2
-                        m_stats[i].vertex_buffer_size, m_stats[i].colorz_buffer_size,                   // 3 4
-                        m_stats[i].vertex_buffer_bw, m_stats[i].colorz_buffer_bw,                       // 5 6
-                        m_stats[i].time_us);                                                            // 7
+                    fprintf(out, "%d %d %lu %f %f %f %f %f %f %f\n", 
+                        m_stats[i].vertex, m_stats[i].triangle, m_stats[i].fragments,       // 1 2 3
+                        m_stats[i].vertex_buffer_size, m_stats[i].colorz_buffer_size,       // 4 5
+                        m_stats[i].vertex_buffer_bw, m_stats[i].colorz_buffer_bw,           // 6 7
+                        m_stats[i].time,                                                    // 8
+                        m_stats[i].vertex_rate, m_stats[i].fragment_rate);                  // 9 10
                 
                 fclose(out);
             }
@@ -167,7 +172,7 @@ public:
         static int n= 4;
         
         // mesure le temps d'execution du draw pour le gpu
-        glBeginQuery(GL_TIME_ELAPSED, m_query);
+        //~ glBeginQuery(GL_TIME_ELAPSED, m_query);
         glBeginQuery(GL_SAMPLES_PASSED, m_sample_query);
         glBeginQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB, m_fragment_query);
         glBeginQuery(GL_VERTEX_SHADER_INVOCATIONS_ARB, m_vertex_query);
@@ -175,18 +180,44 @@ public:
             //~ glDrawArrays(GL_TRIANGLES, 0, n*3);
             m_mesh.draw(0, n*3, m_program, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false,  /* use material index */ false);
         }
-        glEndQuery(GL_TIME_ELAPSED);
+        //~ glEndQuery(GL_TIME_ELAPSED);
         glEndQuery(GL_SAMPLES_PASSED);
         glEndQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB);
         glEndQuery(GL_VERTEX_SHADER_INVOCATIONS_ARB);
+
+#if 0        
+        glBeginQuery(GL_TIME_ELAPSED, m_query);
+            m_mesh.draw(0, busy_n*3, m_program, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false,  /* use material index */ false);
+        glEndQuery(GL_TIME_ELAPSED);
         
         // attendre le resultat de la requete
         GLint64 gpu_time= 0;
         glGetQueryObjecti64v(m_query, GL_QUERY_RESULT, &gpu_time);
-        double time= double(gpu_time) / double(1000000000);
+        double time= double(gpu_time) / double(busy_n) * double(n) / double(1000000000);
+        //~ double time= double(gpu_time) / double(128) * double(n) / double(1000000000);
+        //~ double time= double(gpu_time) / double(1000000000);
+#else
+        // moyenner plusieurs realisations...
+        for(int i= 0; i < 32; i++)
+        {
+            glBeginQuery(GL_TIME_ELAPSED, m_time_queries[i]);
+                m_mesh.draw(0, busy_n*3, m_program, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false,  /* use material index */ false);
+            glEndQuery(GL_TIME_ELAPSED);
+        }
+        
+        // attendre le resultat des requetes
+        double time= 0;
+        for(int i= 0; i < 32; i++)
+        {
+            GLint64 gpu_time= 0;
+            glGetQueryObjecti64v(m_time_queries[i], GL_QUERY_RESULT, &gpu_time);
+            time+= double(gpu_time) / double(1000000000);
+        }
+        time= time / 32 * double(n) / double(busy_n);
+#endif
         
         //~ printf("n %lu gpu  %02dms %03dus %03dns\n", n, int(gpu_time / 1000000), int((gpu_time / 1000) % 1000), int(gpu_time) % 1000);
-        printf("%d %lums\n", n, gpu_time / 1000000);
+        printf("%d %.2fms\n", n, time * 1000);
         
         printf("  %.2f triangles/s\n", n / time);
         
@@ -214,26 +245,31 @@ public:
         printf("  %lu %.2fM vertices/s\n", gpu_vertices, gpu_vertices / 1000000.0 / time );
         printf("  %.2f MB/s\n", gpu_vertices*sizeof(float)*8 / time / (1024.0*1024.0));
         printf("  x%.2f\n", double(n*3) / double(gpu_vertices));
-        
+
         //~ struct stat
         //~ {
-            //~ int vertices;
-            //~ int triangles;
-            //~ size_t vertex_buffer_size;
-            //~ size_t colorz_buffer_size;
-            //~ float vertex_buffer_bw;
-            //~ float colorz_buffer_bw;
-            //~ float time_us;
+                //~ int vertex;
+                //~ int triangle;
+                //~ size_t fragments;
+                //~ float vertex_buffer_size;  // Mo
+                //~ float colorz_buffer_size;
+                //~ float vertex_buffer_bw;     // Mo/s
+                //~ float colorz_buffer_bw;
+                //~ float time; // us 
+                //~ float vertex_rate;
+                //~ float fragment_rate;
         //~ };        
         m_stats.push_back( { 
-                int(gpu_vertices), n, 
-                gpu_vertices*sizeof(float)*8, size_t(gpu_samples*8), 
-                float(gpu_vertices*sizeof(float)*8 / time / (1024.0*1024.0)), float(gpu_samples*8 / time / (1024.0*1024.0)),
-                float(gpu_time / float(1000))
+                int(gpu_vertices), n, size_t(gpu_fragments),
+                float(gpu_vertices*sizeof(float)*8) / float(1024*1024), float(gpu_samples *8) / float(1024 * 1024), 
+                float(gpu_vertices*sizeof(float)*8 / time / (1024*1024)), float(gpu_samples*8 / time / (1024*1024)),
+                float(time * float(1000000)),
+                float(n*3 / time),
+                float(gpu_fragments / time)
             } );
         
         if(n < busy_n)
-            n= n*2;
+            n= n +128;
         else
             return 0;
             
@@ -246,6 +282,7 @@ protected:
     GLuint m_vao;
     GLuint m_program;
     GLuint m_query;
+    GLuint m_time_queries[32];
     GLuint m_sample_query;
     GLuint m_fragment_query;
     GLuint m_vertex_query;
