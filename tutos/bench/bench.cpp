@@ -54,7 +54,7 @@ public:
         
         // genere quelques triangles...
         m_mesh= Mesh(GL_TRIANGLES);
-        for(int i= 0; i < 1024*1024; i++)
+        for(int i= 0; i < 1024*1024*16; i++)
         {
             m_mesh.texcoord(0, 0);
             m_mesh.normal(0, 0, 1);
@@ -288,12 +288,15 @@ public:
                 float(gpu_fragments / time)
             } );
         
-        if(n < busy_n)
-            //~ n= n +256;
-            n= n *2;
-        else
+        if(n >= busy_n)
             return 0;
-            
+        
+        // ajuste le nombre de triangles pour le prochain test
+        //~ if(!m_culled)
+            //~ n= n +256;
+        //~ else
+            n= n *2;
+        
         return 1;
     }
 
