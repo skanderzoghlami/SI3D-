@@ -21,6 +21,13 @@ struct stat
     float fragment_rate;
 };
 
+#ifdef WIN32
+// force les portables a utiliser leur gpu dedie, et pas le gpu integre au processeur...
+extern "C" {
+    __declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+    __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
+#endif
 
 class TP : public App
 {
@@ -28,6 +35,14 @@ public:
     // constructeur : donner les dimensions de l'image, et eventuellement la version d'openGL.
     TP( std::vector<const  char *> options ) : App(512, 512)
     {
+        {
+            const unsigned char *vendor= glGetString(GL_VENDOR);
+            const unsigned char *renderer= glGetString(GL_RENDERER);
+            const unsigned char *version= glGetString(GL_VERSION);
+            
+            printf("[openGL  ] %s\n[renderer] %s\n[vendor  ] %s\n", version, renderer, vendor);
+        }
+
         bool culled= false;
         const char *filename= "bench.txt";
         
