@@ -44,6 +44,8 @@ les librairies sont disponibles :
     - copier le contenu des fichiers .dmg dans `/Library/Frameworks`, 
     - copiez [premake](https://premake.github.io/download) dans le répertoire de gKit.
 
+les librairies et premake sont également dispo dans le gestionnaire de paquets [brew](https://brew.sh/).
+
 
 # étape 3 : générer les projets
 

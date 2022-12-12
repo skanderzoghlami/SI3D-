@@ -1,4 +1,6 @@
 
+//! \file raytrace.glsl fragment shader, intersection rayon / quelques triangles
+
 #version 330
 
 #ifdef VERTEX_SHADER

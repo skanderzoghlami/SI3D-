@@ -1,4 +1,6 @@
 
+//! \file tuto_raytrace_fragment.cpp utilise un fragment shader, intersection rayon / quelques triangles.
+
 #include <cfloat>
 #include <cmath>
 #include <algorithm>
