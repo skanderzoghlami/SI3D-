@@ -1,5 +1,5 @@
 
-//! \file tuto_compute_buffer.cpp relire un buffer privee
+//! \file tuto_compute_buffer.cpp compute shader + buffers
 
 #include <vector>
 

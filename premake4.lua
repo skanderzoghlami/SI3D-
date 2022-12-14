@@ -216,7 +216,8 @@ tutosM2 = {
     "tuto_histogram_compute",
     "tuto_read_buffer",
     "tuto_count_buffer",
-	"tuto_compute_buffer"
+	"tuto_compute_buffer",
+	"tuto_compute_image",
 }
 
 for i, name in ipairs(tutosM2) do

@@ -1,5 +1,5 @@
 
-//! \file read_buffer.glsl relire un buffer privee
+//! \file read_buffer.glsl relire un buffer prive
 
 #version 430
 
