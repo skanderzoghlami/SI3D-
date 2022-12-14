@@ -87,6 +87,13 @@ public:
         return &m_pixels.front();
     }
     
+    //! renvoie un pointeur sur le stockage des couleurs des pixels.
+    void *data( )
+    {
+        assert(!m_pixels.empty());
+        return &m_pixels.front();
+    }
+    
     //! renvoie la largeur de l'image.
     int width( ) const { return m_width; }
     //! renvoie la hauteur de l'image.
