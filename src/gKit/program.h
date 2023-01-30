@@ -35,5 +35,11 @@ int program_format_errors( const GLuint program, std::string& errors );
 //! affiche les erreurs de compilation.
 int program_print_errors( const GLuint program );
 
+//! renvoie vrai si le programme est pret. (pas d'erreurs de compilation des shaders, pas d'erreur de link).
+bool program_ready( const GLuint program );
+
+//! renvoie vrai si le programme n'est pas pret.
+bool program_errors( const GLuint program );
+
 ///@}
 #endif
