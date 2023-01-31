@@ -30,8 +30,8 @@ par exemple, pour ubuntu et ses variantes :
 
 ## windows
 
-les librairies et premake4/5 sont regroupées dans une archive [disponible ici](http://perso.univ-lyon1.fr/jean-claude.iehl/Public/educ/M1IMAGE/extern_mingw_visual.zip).
-    - dezipper l'archive dans le répertoire de gKit, vous devez obtenir un répertoire `gkit2light/extern`,
+les librairies et premake4/5 sont regroupées dans une archive [disponible ici](https://perso.univ-lyon1.fr/jean-claude.iehl/Public/educ/M1IMAGE/extern_mingw_visual.zip).
+    - dezippez l'archive dans le répertoire de gKit, vous devez obtenir un répertoire `gkit2light/extern`,
     - copiez `extern/premake4.exe` et `extern/premake5.exe` dans le répertoire de gKit.
 
 ## mac os 

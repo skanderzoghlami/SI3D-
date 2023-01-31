@@ -1,5 +1,5 @@
 
-//! \file compute_add.glsl exemple compute shader + buffers
+//! \file compute_buffer.glsl exemple compute shader + buffers
 
 #version 430
 
