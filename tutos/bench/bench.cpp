@@ -3,7 +3,9 @@
 #include "uniforms.h"
 
 #include "mesh.h"
+#include "orbiter.h"
 #include "texture.h"
+#include "wavefront_fast.h"
 
 #include "app.h"        // classe Application a deriver
 
@@ -11,7 +13,7 @@ struct stat
 {
     int vertex;
     int triangle;
-    size_t fragments;
+    int fragments;      // M
     float vertex_buffer_size;  // Mo
     float colorz_buffer_size;
     float vertex_buffer_bw;     // Mo/s
@@ -20,12 +22,45 @@ struct stat
     float vertex_rate;
     float fragment_rate;
 };
+#ifdef WIN32
+// force les portables a utiliser leur gpu dedie, et pas le gpu integre au processeur...
+extern "C" {
+    __declspec(dllexport) unsigned NvOptimusEnablement = 0x00000001;
+    __declspec(dllexport) unsigned AmdPowerXpressRequestHighPerformance = 1;
+}
+#endif
 
 class TP : public App
 {
 public:
     // constructeur : donner les dimensions de l'image, et eventuellement la version d'openGL.
-    TP( ) : App(512, 512) {}
+    TP( std::vector<const  char *> options ) : App(512, 512)
+    {
+        {
+            const unsigned char *vendor= glGetString(GL_VENDOR);
+            const unsigned char *renderer= glGetString(GL_RENDERER);
+            const unsigned char *version= glGetString(GL_VERSION);
+            
+            printf("[openGL  ] %s\n[renderer] %s\n[vendor  ] %s\n", version, renderer, vendor);
+        }
+
+        bool culled= false;
+        const char *filename= "bench.txt";
+        
+        for(unsigned i= 1; i < options.size(); i++)
+        {
+            if(std::string(options[i]) == "--cull" || std::string(options[i]) == "--culled")
+                culled= true;
+            if(std::string(options[i]) == "--fill" || std::string(options[i]) == "--filled")
+                culled= false;
+            if(options[i][0] == '-')
+                if(std::string(options[i]) == "-o" && i+1 < options.size())
+                    filename= options[i+1];
+        }
+        
+        m_culled= culled;
+        m_filename= filename;
+    }
     
     // creation des objets de l'application
     int init( )
@@ -35,7 +70,7 @@ public:
         
         // genere quelques triangles...
         m_mesh= Mesh(GL_TRIANGLES);
-        for(int i= 0; i < 1024*1024; i++)
+        for(int i= 0; i < 1024*1024*16; i++)
         {
             m_mesh.texcoord(0, 0);
             m_mesh.normal(0, 0, 1);
@@ -62,6 +97,8 @@ public:
         glGenQueries(1, &m_sample_query);
         glGenQueries(1, &m_fragment_query);
         glGenQueries(1, &m_vertex_query);
+        glGenQueries(1, &m_culling_query);
+        glGenQueries(1, &m_clipping_query);
         
         // etat openGL par defaut
         glClearColor(0.2f, 0.2f, 0.2f, 1.f);        // couleur par defaut de la fenetre
@@ -73,8 +110,10 @@ public:
         //~ glDisable(GL_DEPTH_TEST);                    // activer le ztest
         
         glFrontFace(GL_CCW);
-        glCullFace(GL_BACK);
-        //~ glCullFace(GL_FRONT);
+        if(m_culled)
+            glCullFace(GL_FRONT);
+        else
+            glCullFace(GL_BACK);
         glEnable(GL_CULL_FACE);
         
         // transfere les donnees...
@@ -93,14 +132,12 @@ public:
     {
         // exporte les mesures
         {
-            const char *filename= "bench.txt";
-            
-            printf("writing '%s'...\n", filename);
-            FILE *out= fopen(filename, "wt");
+            printf("writing '%s'...\n", m_filename);
+            FILE *out= fopen(m_filename, "wt");
             if(out)
             {
                 for(unsigned i= 0; i < m_stats.size(); i++)
-                    fprintf(out, "%d %d %lu %f %f %f %f %f %f %f\n", 
+                    fprintf(out, "%d %d %d %f %f %f %f %f %f %f\n", 
                         m_stats[i].vertex, m_stats[i].triangle, m_stats[i].fragments,       // 1 2 3
                         m_stats[i].vertex_buffer_size, m_stats[i].colorz_buffer_size,       // 4 5
                         m_stats[i].vertex_buffer_bw, m_stats[i].colorz_buffer_bw,           // 6 7
@@ -140,7 +177,10 @@ public:
             while(ms < 8)
             {
                 if(busy_n*2 > m_mesh.triangle_count())
+                {
+                    busy_n= m_mesh.triangle_count();
                     busy_loop++;
+                }
                 else
                     busy_n= busy_n*2;
                 
@@ -175,6 +215,8 @@ public:
         glBeginQuery(GL_SAMPLES_PASSED, m_sample_query);
         glBeginQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB, m_fragment_query);
         glBeginQuery(GL_VERTEX_SHADER_INVOCATIONS_ARB, m_vertex_query);
+        glBeginQuery(GL_CLIPPING_INPUT_PRIMITIVES_ARB, m_culling_query);         // reussi le test de front/back face culling
+        glBeginQuery(GL_CLIPPING_OUTPUT_PRIMITIVES_ARB, m_clipping_query);        // primitives reellement dessinees
         {
             //~ glDrawArrays(GL_TRIANGLES, 0, n*3);
             m_mesh.draw(0, n*3, m_program, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false,  /* use material index */ false);
@@ -183,6 +225,8 @@ public:
         glEndQuery(GL_SAMPLES_PASSED);
         glEndQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB);
         glEndQuery(GL_VERTEX_SHADER_INVOCATIONS_ARB);
+        glEndQuery(GL_CLIPPING_INPUT_PRIMITIVES_ARB);         // reussi le test de front/back face culling
+        glEndQuery(GL_CLIPPING_OUTPUT_PRIMITIVES_ARB);        // primitives reellement dessinees
 
 #if 0        
         glBeginQuery(GL_TIME_ELAPSED, m_query);
@@ -234,6 +278,7 @@ public:
         //
         GLint64 gpu_fragments= 0;
         glGetQueryObjecti64v(m_fragment_query, GL_QUERY_RESULT, &gpu_fragments);
+        //~ printf("  %.2fM %.2fM fragments/s\n", float(gpu_fragments) / 1000000, gpu_fragments / 1000000.0 / time );
         printf("  %lu %.2fM fragments/s\n", gpu_fragments, gpu_fragments / 1000000.0 / time );
         
         if(gpu_samples != gpu_fragments)
@@ -247,6 +292,15 @@ public:
         printf("  %.2f MB/s\n", gpu_vertices*sizeof(float)*8 / time / (1024.0*1024.0));
         printf("  x%.2f\n", double(n*3) / double(gpu_vertices));
 
+        //
+        GLint64 gpu_culling= 0;
+        glGetQueryObjecti64v(m_culling_query, GL_QUERY_RESULT, &gpu_culling);
+        printf("  %lu !culled triangles / %d triangles\n", gpu_culling, n);
+        
+        //
+        GLint64 gpu_clipping= 0;
+        glGetQueryObjecti64v(m_culling_query, GL_QUERY_RESULT, &gpu_clipping);
+        printf("  %lu clipped triangles / %d triangles\n", gpu_clipping, n);
         //~ struct stat
         //~ {
                 //~ int vertex;
@@ -261,7 +315,7 @@ public:
                 //~ float fragment_rate;
         //~ };        
         m_stats.push_back( { 
-                int(gpu_vertices), n, size_t(gpu_fragments),
+                int(gpu_vertices), n, int(gpu_fragments / 1000000),
                 float(gpu_vertices*sizeof(float)*8) / float(1024*1024), float(gpu_samples *8) / float(1024*1024), 
                 float(gpu_vertices*sizeof(float)*8 / time / (1024*1024)), float(gpu_samples*8 / time / (1024*1024)),
                 float(time * float(1000000)),
@@ -280,6 +334,10 @@ public:
 
 protected:
     Mesh m_mesh;
+    Orbiter m_camera;
+    
+    const char *m_filename;
+    bool m_culled;
     GLuint m_grid_texture;
     GLuint m_vao;
     GLuint m_program;
@@ -288,6 +346,8 @@ protected:
     GLuint m_sample_query;
     GLuint m_fragment_query;
     GLuint m_vertex_query;
+    GLuint m_culling_query;
+    GLuint m_clipping_query;
     
     std::vector<stat> m_stats;
 };
@@ -296,7 +356,7 @@ protected:
 int main( int argc, char **argv )
 {
     // il ne reste plus qu'a creer un objet application et la lancer 
-    TP tp;
+    TP tp(std::vector<const char *>( argv, argv + argc ));
     tp.run();
     
     return 0;
