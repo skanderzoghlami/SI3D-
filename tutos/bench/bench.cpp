@@ -306,7 +306,7 @@ public:
         //~ {
                 //~ int vertex;
                 //~ int triangle;
-                //~ size_t fragments;
+                //~ int fragments;      // M
                 //~ float vertex_buffer_size;  // Mo
                 //~ float colorz_buffer_size;
                 //~ float vertex_buffer_bw;     // Mo/s
