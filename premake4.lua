@@ -237,6 +237,13 @@ project("bench")
 	files ( gkit_files )
 	files { gkit_dir .. "/tutos/bench/bench.cpp" }
         
+project("benchv2")
+	language "C++"
+	kind "ConsoleApp"
+	targetdir "bin"
+	files ( gkit_files )
+	files { gkit_dir .. "/tutos/bench/benchv2.cpp" }
+        
 project("gltf")
 	language "C++"
 	kind "ConsoleApp"
