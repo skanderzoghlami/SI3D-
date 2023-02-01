@@ -32,9 +32,9 @@ in vec3 vertex_normal;
 in vec3 vertex_position;
 
 uniform sampler2D grid;
-layout(early_fragment_tests) in ;
-
 out vec4 fragment_color;
+
+layout(early_fragment_tests) in ;
 void main( )
 {
 	vec3 color= texture(grid, vertex_texcoord).rgb;

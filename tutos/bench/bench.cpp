@@ -30,6 +30,14 @@ extern "C" {
 }
 #endif
 
+#ifdef WIN32
+// force les portables a utiliser leur gpu dedie, et pas le gpu integre au processeur...
+extern "C" {
+    __declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+    __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
+#endif
+
 class TP : public App
 {
 public:
@@ -323,16 +331,21 @@ public:
                 float(gpu_fragments / time)
             } );
         
-        if(n < busy_n)
-            //~ n= n +256;
-            n= n *2;
-        else
+        if(n >= busy_n)
             return 0;
-            
+        
+        // ajuste le nombre de triangles pour le prochain test
+        //~ if(!m_culled)
+            //~ n= n +256;
+        //~ else
+            n= n *2;
+        
         return 1;
     }
 
 protected:
+    const char *m_filename;
+    bool m_culled;
     Mesh m_mesh;
     Orbiter m_camera;
     

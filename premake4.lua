@@ -166,7 +166,6 @@ tutos = {
     "tuto_storage_buffer",
     "tuto_storage_texture",
     "min_data",
-    "tuto_compute_buffer",
     "tuto_vertex_compute",
     
     "tuto_rayons",
@@ -216,7 +215,9 @@ tutosM2 = {
     "tuto_histogram2_compute",
     "tuto_histogram_compute",
     "tuto_read_buffer",
-    "tuto_count_buffer"
+    "tuto_count_buffer",
+	"tuto_compute_buffer",
+	"tuto_compute_image",
 }
 
 for i, name in ipairs(tutosM2) do

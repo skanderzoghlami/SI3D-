@@ -1,5 +1,5 @@
 
-//! \file read_buffer.glsl relire un buffer prive
+//! \file compute_buffer.glsl exemple compute shader + buffers
 
 #version 430
 
