@@ -22,19 +22,12 @@ struct stat
     float vertex_rate;
     float fragment_rate;
 };
+
 #ifdef WIN32
 // force les portables a utiliser leur gpu dedie, et pas le gpu integre au processeur...
 extern "C" {
     __declspec(dllexport) unsigned NvOptimusEnablement = 0x00000001;
     __declspec(dllexport) unsigned AmdPowerXpressRequestHighPerformance = 1;
-}
-#endif
-
-#ifdef WIN32
-// force les portables a utiliser leur gpu dedie, et pas le gpu integre au processeur...
-extern "C" {
-    __declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
-    __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
 #endif
 
@@ -61,9 +54,9 @@ public:
                 culled= true;
             if(std::string(options[i]) == "--fill" || std::string(options[i]) == "--filled")
                 culled= false;
-            if(options[i][0] == '-')
-                if(std::string(options[i]) == "-o" && i+1 < options.size())
-                    filename= options[i+1];
+            
+            if(std::string(options[i]) == "-o" && i+1 < options.size())
+                filename= options[i+1];
         }
         
         m_culled= culled;
@@ -347,10 +340,8 @@ protected:
     const char *m_filename;
     bool m_culled;
     Mesh m_mesh;
-    Orbiter m_camera;
+    //~ Orbiter m_camera;
     
-    const char *m_filename;
-    bool m_culled;
     GLuint m_grid_texture;
     GLuint m_vao;
     GLuint m_program;
