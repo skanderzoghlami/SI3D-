@@ -178,6 +178,7 @@ int reload_program( GLuint program, const char *filename, const char *definition
             // cree et compile les shaders detectes dans le source
             std::string source= prepare_source(common_source, std::string(definitions).append("#define ").append(shader_keys[i]).append("\n"));
             GLuint shader= compile_shader(program, shader_types[i], source);
+            //~ printf("  %s...\n", shader_string(shader_types[i]));
             if(shader == 0)
                 printf("[error] compiling %s...\n%s\n", shader_string(shader_types[i]), definitions);
         }
@@ -229,6 +230,53 @@ int release_program( const GLuint program )
 
     glDeleteProgram(program);
     return 0;
+}
+
+
+bool program_ready( const GLuint program )
+{
+    if(program == 0)
+        return false;
+    
+    GLint status= GL_FALSE;
+    glGetProgramiv(program, GL_LINK_STATUS, &status);
+    
+#ifndef GK_RELEASE
+    #ifdef GL_VERSION_4_3
+        char label[1024];
+        glGetObjectLabel(GL_PROGRAM, program, sizeof(label), nullptr, label);
+        
+        if(status == GL_FALSE)  // n'affiche le messsage qu'en cas d'erreur...
+            printf("program %u '%s' %s...\n", program, label, (status == GL_TRUE) ? "ready" : "not ready");
+    #else
+        printf("program %u %s...\n", program, (status == GL_TRUE) ? "ready" : "not ready");
+    #endif
+#endif
+    
+    return (status == GL_TRUE);
+}
+
+bool program_errors( const GLuint program )
+{
+    if(program == 0)
+        return true;
+    
+    GLint status;
+    glGetProgramiv(program, GL_LINK_STATUS, &status);
+    
+#ifndef GK_RELEASE
+    #ifdef GL_VERSION_4_3
+        char label[1024];
+        glGetObjectLabel(GL_PROGRAM, program, sizeof(label), nullptr, label);
+        
+        if(status == GL_FALSE)  // n'affiche le messsage qu'en cas d'erreur...
+            printf("program %u '%s' %s...\n", program, label, (status == GL_TRUE) ? "ready" : "not ready");
+    #else
+        printf("program %u %s...\n", program, (status == GL_TRUE) ? "ready" : "not ready");
+    #endif
+#endif
+    
+    return (status == GL_FALSE);
 }
 
 

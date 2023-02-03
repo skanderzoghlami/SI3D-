@@ -3,7 +3,9 @@
 #include "uniforms.h"
 
 #include "mesh.h"
+#include "orbiter.h"
 #include "texture.h"
+#include "wavefront_fast.h"
 
 #include "app.h"        // classe Application a deriver
 
@@ -11,7 +13,7 @@ struct stat
 {
     int vertex;
     int triangle;
-    size_t fragments;
+    int fragments;      // M
     float vertex_buffer_size;  // Mo
     float colorz_buffer_size;
     float vertex_buffer_bw;     // Mo/s
@@ -24,8 +26,8 @@ struct stat
 #ifdef WIN32
 // force les portables a utiliser leur gpu dedie, et pas le gpu integre au processeur...
 extern "C" {
-    __declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
-    __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+    __declspec(dllexport) unsigned NvOptimusEnablement = 0x00000001;
+    __declspec(dllexport) unsigned AmdPowerXpressRequestHighPerformance = 1;
 }
 #endif
 
@@ -52,9 +54,9 @@ public:
                 culled= true;
             if(std::string(options[i]) == "--fill" || std::string(options[i]) == "--filled")
                 culled= false;
-            if(options[i][0] == '-')
-                if(std::string(options[i]) == "-o" && i+1 < options.size())
-                    filename= options[i+1];
+            
+            if(std::string(options[i]) == "-o" && i+1 < options.size())
+                filename= options[i+1];
         }
         
         m_culled= culled;
@@ -69,7 +71,8 @@ public:
         
         // genere quelques triangles...
         m_mesh= Mesh(GL_TRIANGLES);
-        for(int i= 0; i < 1024*1024*16; i++)
+        
+        for(int i= 0; i < 1024*1024*16; i++)    // \todo ne creer qu'1M triangles et utiliser glDrawArraysInstanced()...
         {
             m_mesh.texcoord(0, 0);
             m_mesh.normal(0, 0, 1);
@@ -86,7 +89,6 @@ public:
         
         m_grid_texture= read_texture(0, "data/grid.png");
         
-        //~ m_program=read_program("tutos/bench/vertex1.glsl");
         m_program=read_program("tutos/bench/vertex2.glsl");
         program_print_errors(m_program);
         
@@ -96,6 +98,8 @@ public:
         glGenQueries(1, &m_sample_query);
         glGenQueries(1, &m_fragment_query);
         glGenQueries(1, &m_vertex_query);
+        glGenQueries(1, &m_culling_query);
+        glGenQueries(1, &m_clipping_query);
         
         // etat openGL par defaut
         glClearColor(0.2f, 0.2f, 0.2f, 1.f);        // couleur par defaut de la fenetre
@@ -115,8 +119,8 @@ public:
         
         // transfere les donnees...
         glUseProgram(m_program);
-        program_uniform(m_program, "mvp", Identity());
-        program_uniform(m_program, "mv", Identity());
+        program_uniform(m_program, "mvpMatrix", Identity());
+        program_uniform(m_program, "mvMatrix", Identity());
         program_use_texture(m_program, "grid", 0, m_grid_texture);
         
         m_mesh.draw(0, 3, m_program, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false,  /* use material index */ false);
@@ -134,7 +138,7 @@ public:
             if(out)
             {
                 for(unsigned i= 0; i < m_stats.size(); i++)
-                    fprintf(out, "%d %d %lu %f %f %f %f %f %f %f\n", 
+                    fprintf(out, "%d %d %d %f %f %f %f %f %f %f\n", 
                         m_stats[i].vertex, m_stats[i].triangle, m_stats[i].fragments,       // 1 2 3
                         m_stats[i].vertex_buffer_size, m_stats[i].colorz_buffer_size,       // 4 5
                         m_stats[i].vertex_buffer_bw, m_stats[i].colorz_buffer_bw,           // 6 7
@@ -174,7 +178,10 @@ public:
             while(ms < 8)
             {
                 if(busy_n*2 > m_mesh.triangle_count())
+                {
+                    busy_n= m_mesh.triangle_count();
                     busy_loop++;
+                }
                 else
                     busy_n= busy_n*2;
                 
@@ -209,6 +216,8 @@ public:
         glBeginQuery(GL_SAMPLES_PASSED, m_sample_query);
         glBeginQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB, m_fragment_query);
         glBeginQuery(GL_VERTEX_SHADER_INVOCATIONS_ARB, m_vertex_query);
+        glBeginQuery(GL_CLIPPING_INPUT_PRIMITIVES_ARB, m_culling_query);         // reussi le test de front/back face culling
+        glBeginQuery(GL_CLIPPING_OUTPUT_PRIMITIVES_ARB, m_clipping_query);        // primitives reellement dessinees
         {
             //~ glDrawArrays(GL_TRIANGLES, 0, n*3);
             m_mesh.draw(0, n*3, m_program, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false,  /* use material index */ false);
@@ -217,6 +226,8 @@ public:
         glEndQuery(GL_SAMPLES_PASSED);
         glEndQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB);
         glEndQuery(GL_VERTEX_SHADER_INVOCATIONS_ARB);
+        glEndQuery(GL_CLIPPING_INPUT_PRIMITIVES_ARB);         // reussi le test de front/back face culling
+        glEndQuery(GL_CLIPPING_OUTPUT_PRIMITIVES_ARB);        // primitives reellement dessinees
 
 #if 0        
         glBeginQuery(GL_TIME_ELAPSED, m_query);
@@ -234,7 +245,6 @@ public:
         for(int i= 0; i < 32; i++)
         {
             glBeginQuery(GL_TIME_ELAPSED, m_time_queries[i]);
-                //~ m_mesh.draw(0, busy_n*3, m_program, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false,  /* use material index */ false);
                 m_mesh.draw(0, n*3, m_program, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false,  /* use material index */ false);
             glEndQuery(GL_TIME_ELAPSED);
         }
@@ -247,11 +257,9 @@ public:
             glGetQueryObjecti64v(m_time_queries[i], GL_QUERY_RESULT, &gpu_time);
             time+= double(gpu_time) / double(1000000000);
         }
-        //~ time= time / 32 * double(n) / double(busy_n);
         time= time / 32;
 #endif
         
-        //~ printf("n %lu gpu  %02dms %03dus %03dns\n", n, int(gpu_time / 1000000), int((gpu_time / 1000) % 1000), int(gpu_time) % 1000);
         printf("%d %.2fms\n", n, time * 1000);
         
         printf("  %.2f triangles/s\n", n / time);
@@ -268,11 +276,12 @@ public:
         //
         GLint64 gpu_fragments= 0;
         glGetQueryObjecti64v(m_fragment_query, GL_QUERY_RESULT, &gpu_fragments);
+        //~ printf("  %.2fM %.2fM fragments/s\n", float(gpu_fragments) / 1000000, gpu_fragments / 1000000.0 / time );
         printf("  %lu %.2fM fragments/s\n", gpu_fragments, gpu_fragments / 1000000.0 / time );
         
-        if(gpu_samples != gpu_fragments)
-            // bug sur le compteur de fragments, pas trop sur 64bits... 
-            return 0;
+        //~ if(gpu_samples != gpu_fragments)
+            //~ // bug sur le compteur de fragments, pas trop sur 64bits... 
+            //~ return 0;
         
         //
         GLint64 gpu_vertices= 0;
@@ -281,11 +290,21 @@ public:
         printf("  %.2f MB/s\n", gpu_vertices*sizeof(float)*8 / time / (1024.0*1024.0));
         printf("  x%.2f\n", double(n*3) / double(gpu_vertices));
 
+        //
+        GLint64 gpu_culling= 0;
+        glGetQueryObjecti64v(m_culling_query, GL_QUERY_RESULT, &gpu_culling);
+        printf("  %lu !culled triangles / %d triangles\n", gpu_culling, n);
+        
+        //
+        GLint64 gpu_clipping= 0;
+        glGetQueryObjecti64v(m_culling_query, GL_QUERY_RESULT, &gpu_clipping);
+        printf("  %lu clipped triangles / %d triangles\n", gpu_clipping, n);
+        
         //~ struct stat
         //~ {
                 //~ int vertex;
                 //~ int triangle;
-                //~ size_t fragments;
+                //~ int fragments;      // M
                 //~ float vertex_buffer_size;  // Mo
                 //~ float colorz_buffer_size;
                 //~ float vertex_buffer_bw;     // Mo/s
@@ -293,9 +312,10 @@ public:
                 //~ float time; // us 
                 //~ float vertex_rate;
                 //~ float fragment_rate;
-        //~ };        
+        //~ };
+        
         m_stats.push_back( { 
-                int(gpu_vertices), n, size_t(gpu_fragments),
+                int(gpu_vertices), n, int(gpu_fragments / 1000000),
                 float(gpu_vertices*sizeof(float)*8) / float(1024*1024), float(gpu_samples *8) / float(1024*1024), 
                 float(gpu_vertices*sizeof(float)*8 / time / (1024*1024)), float(gpu_samples*8 / time / (1024*1024)),
                 float(time * float(1000000)),
@@ -307,11 +327,9 @@ public:
             return 0;
         
         // ajuste le nombre de triangles pour le prochain test
-        //~ if(!m_culled)
-            //~ n= n +256;
-        //~ else
-            n= n *2;
+        n= n *2;
         
+        // on continue...
         return 1;
     }
 
@@ -319,6 +337,8 @@ protected:
     const char *m_filename;
     bool m_culled;
     Mesh m_mesh;
+    //~ Orbiter m_camera;
+    
     GLuint m_grid_texture;
     GLuint m_vao;
     GLuint m_program;
@@ -327,6 +347,8 @@ protected:
     GLuint m_sample_query;
     GLuint m_fragment_query;
     GLuint m_vertex_query;
+    GLuint m_culling_query;
+    GLuint m_clipping_query;
     
     std::vector<stat> m_stats;
 };
