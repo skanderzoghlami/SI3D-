@@ -238,7 +238,7 @@ bool program_ready( const GLuint program )
     if(program == 0)
         return false;
     
-    GLint status;
+    GLint status= GL_FALSE;
     glGetProgramiv(program, GL_LINK_STATUS, &status);
     
 #ifndef GK_RELEASE
@@ -246,8 +246,6 @@ bool program_ready( const GLuint program )
         char label[1024];
         glGetObjectLabel(GL_PROGRAM, program, sizeof(label), nullptr, label);
         
-        //~ printf("program %u '%s' %s...\n", program, label, (status == GL_TRUE) ? "ready" : "not ready");
-    
         if(status == GL_FALSE)  // n'affiche le messsage qu'en cas d'erreur...
             printf("program %u '%s' %s...\n", program, label, (status == GL_TRUE) ? "ready" : "not ready");
     #else
@@ -271,7 +269,8 @@ bool program_errors( const GLuint program )
         char label[1024];
         glGetObjectLabel(GL_PROGRAM, program, sizeof(label), nullptr, label);
         
-        printf("program %u '%s' %s...\n", program, label, (status == GL_TRUE) ? "ready" : "not ready");
+        if(status == GL_FALSE)  // n'affiche le messsage qu'en cas d'erreur...
+            printf("program %u '%s' %s...\n", program, label, (status == GL_TRUE) ? "ready" : "not ready");
     #else
         printf("program %u %s...\n", program, (status == GL_TRUE) ? "ready" : "not ready");
     #endif
