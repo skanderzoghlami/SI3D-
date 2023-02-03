@@ -50,8 +50,8 @@ void main( )
 	atomicAdd(triangles[gl_PrimitiveID], 1);
 	imageAtomicAdd(image, ivec2(gl_FragCoord.xy), 1);
 	
-	uint64_t mask= ballotARB(true);
-	//~ uint64_t mask= ballotARB(gl_HelperInvocation == false);	// meme resultat...
+	//~ uint64_t mask= ballotARB(true);
+	uint64_t mask= ballotARB(gl_HelperInvocation == false);
 	float v= float(bitCount64(mask)) / float(gl_SubGroupSizeARB);
 	fragment_color= vec4(1 - v, v, 0, 1);
 	if(v > 1)

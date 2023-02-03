@@ -71,7 +71,8 @@ public:
         
         // genere quelques triangles...
         m_mesh= Mesh(GL_TRIANGLES);
-        for(int i= 0; i < 1024*1024*16; i++)
+        
+        for(int i= 0; i < 1024*1024*16; i++)    // \todo ne creer qu'1M triangles et utiliser glDrawArraysInstanced()...
         {
             m_mesh.texcoord(0, 0);
             m_mesh.normal(0, 0, 1);
@@ -88,7 +89,6 @@ public:
         
         m_grid_texture= read_texture(0, "data/grid.png");
         
-        //~ m_program=read_program("tutos/bench/vertex1.glsl");
         m_program=read_program("tutos/bench/vertex2.glsl");
         program_print_errors(m_program);
         
@@ -119,8 +119,8 @@ public:
         
         // transfere les donnees...
         glUseProgram(m_program);
-        program_uniform(m_program, "mvp", Identity());
-        program_uniform(m_program, "mv", Identity());
+        program_uniform(m_program, "mvpMatrix", Identity());
+        program_uniform(m_program, "mvMatrix", Identity());
         program_use_texture(m_program, "grid", 0, m_grid_texture);
         
         m_mesh.draw(0, 3, m_program, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false,  /* use material index */ false);
@@ -245,7 +245,6 @@ public:
         for(int i= 0; i < 32; i++)
         {
             glBeginQuery(GL_TIME_ELAPSED, m_time_queries[i]);
-                //~ m_mesh.draw(0, busy_n*3, m_program, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false,  /* use material index */ false);
                 m_mesh.draw(0, n*3, m_program, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false,  /* use material index */ false);
             glEndQuery(GL_TIME_ELAPSED);
         }
@@ -258,11 +257,9 @@ public:
             glGetQueryObjecti64v(m_time_queries[i], GL_QUERY_RESULT, &gpu_time);
             time+= double(gpu_time) / double(1000000000);
         }
-        //~ time= time / 32 * double(n) / double(busy_n);
         time= time / 32;
 #endif
         
-        //~ printf("n %lu gpu  %02dms %03dus %03dns\n", n, int(gpu_time / 1000000), int((gpu_time / 1000) % 1000), int(gpu_time) % 1000);
         printf("%d %.2fms\n", n, time * 1000);
         
         printf("  %.2f triangles/s\n", n / time);
@@ -282,9 +279,9 @@ public:
         //~ printf("  %.2fM %.2fM fragments/s\n", float(gpu_fragments) / 1000000, gpu_fragments / 1000000.0 / time );
         printf("  %lu %.2fM fragments/s\n", gpu_fragments, gpu_fragments / 1000000.0 / time );
         
-        if(gpu_samples != gpu_fragments)
-            // bug sur le compteur de fragments, pas trop sur 64bits... 
-            return 0;
+        //~ if(gpu_samples != gpu_fragments)
+            //~ // bug sur le compteur de fragments, pas trop sur 64bits... 
+            //~ return 0;
         
         //
         GLint64 gpu_vertices= 0;
@@ -302,6 +299,7 @@ public:
         GLint64 gpu_clipping= 0;
         glGetQueryObjecti64v(m_culling_query, GL_QUERY_RESULT, &gpu_clipping);
         printf("  %lu clipped triangles / %d triangles\n", gpu_clipping, n);
+        
         //~ struct stat
         //~ {
                 //~ int vertex;
@@ -314,7 +312,8 @@ public:
                 //~ float time; // us 
                 //~ float vertex_rate;
                 //~ float fragment_rate;
-        //~ };        
+        //~ };
+        
         m_stats.push_back( { 
                 int(gpu_vertices), n, int(gpu_fragments / 1000000),
                 float(gpu_vertices*sizeof(float)*8) / float(1024*1024), float(gpu_samples *8) / float(1024*1024), 
@@ -328,11 +327,9 @@ public:
             return 0;
         
         // ajuste le nombre de triangles pour le prochain test
-        //~ if(!m_culled)
-            //~ n= n +256;
-        //~ else
-            n= n *2;
+        n= n *2;
         
+        // on continue...
         return 1;
     }
 

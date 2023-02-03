@@ -3,8 +3,8 @@
 
 #ifdef VERTEX_SHADER
 
-uniform mat4 mvp;
-uniform mat4 mv;
+uniform mat4 mvpMatrix;
+uniform mat4 mvMatrix;
 
 layout(location= 0) in vec3 position;
 layout(location= 1) in vec2 texcoord;
@@ -16,11 +16,11 @@ out vec3 vertex_position;
 
 void main( )
 {
-	gl_Position= mvp * vec4(position, 1);
+	gl_Position= mvpMatrix * vec4(position, 1);
 	
 	vertex_texcoord= texcoord;
-	vertex_normal= mat3(mv) * normal;
-	vertex_position= vec3(mv * vec4(position, 1));
+	vertex_normal= mat3(mvMatrix) * normal;
+	vertex_position= vec3(mvMatrix * vec4(position, 1));
 }
 
 #endif

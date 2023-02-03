@@ -48,7 +48,64 @@ public:
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_buffer);
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(unsigned) * m_mesh.triangle_count(), nullptr, GL_STATIC_COPY);
         
+        // triangles pour les tests synthetiques
+        m_triangles= Mesh(GL_TRIANGLES);
+        
+        // test 1 : triangles mal orientes / cull rate
+        for(int i= 0; i < 1024*1024; i++)
+        {
+            m_triangles.texcoord(0, 0);
+            m_triangles.normal(0, 0, 1);
+            m_triangles.vertex(-1, -1, 0);
+            
+            m_triangles.texcoord(1, 1);
+            m_triangles.normal(0, 0, 1);
+            m_triangles.vertex( 1,  1, 0);
+            
+            m_triangles.texcoord(1, 0);
+            m_triangles.normal(0, 0, 1);
+            m_triangles.vertex( 1, -1, 0);
+        }
+        
+        // test 2 : triangles acceptes par le zbuffer / fill rate
+        for(int i= 0; i < 1024*1024; i++)
+        {
+            m_triangles.texcoord(0, 0);
+            m_triangles.normal(0, 0, 1);
+            m_triangles.vertex(-1, -1, 0);
+            
+            m_triangles.texcoord(1, 0);
+            m_triangles.normal(0, 0, 1);
+            m_triangles.vertex( 1, -1, 0);
+
+            m_triangles.texcoord(1, 1);
+            m_triangles.normal(0, 0, 1);
+            m_triangles.vertex( 1,  1, 0);
+        }
+
+        // test 3 : triangles rejettes par le zbuffer / zbuffer rate
+        for(int i= 0; i < 1024*1024; i++)
+        {
+            m_triangles.texcoord(0, 0);
+            m_triangles.normal(0, 0, 1);
+            m_triangles.vertex(-1, -1, 0.5);
+            
+            m_triangles.texcoord(1, 0);
+            m_triangles.normal(0, 0, 1);
+            m_triangles.vertex( 1, -1, 0.5);
+
+            m_triangles.texcoord(1, 1);
+            m_triangles.normal(0, 0, 1);
+            m_triangles.vertex( 1,  1, 0.5);
+        }
+        
+        m_vao_triangles= m_triangles.create_buffers(/* use_texcoord */ true, /* use_normal */ true, /* use_color */ false, /* use_material_index */ false);
+        
         // 
+        m_grid_texture= read_texture(0, "data/grid.png");
+        m_program_texture= read_program("tutos/bench/vertex2.glsl");
+        program_print_errors(m_program_texture);
+        
         m_program= read_program("tutos/bench/bench.glsl");
         program_print_errors(m_program);
         
@@ -59,10 +116,12 @@ public:
         program_print_errors(m_program_display);
 
         // 
-        if(program_errors(m_program) || program_errors(m_program_prepass) || program_errors(m_program_display))
+        if(program_errors(m_program_texture) || program_errors(m_program) || program_errors(m_program_prepass) || program_errors(m_program_display))
             return -1;
         
         //
+        glGenQueries(1, &m_time_query);
+        glGenQueries(1, &m_bench_query);
         glGenQueries(1, &m_sample_query);
         glGenQueries(1, &m_fragment_query);
         glGenQueries(1, &m_vertex_query);
@@ -89,9 +148,17 @@ public:
     int quit( )
     {
         m_mesh.release();
+        m_triangles.release();
+        
+        release_program(m_program_texture);
         release_program(m_program);
+        release_program(m_program_prepass);
         release_program(m_program_display);
+        
         glDeleteTextures(1, &m_texture);
+        
+        glDeleteQueries(1, &m_time_query);
+        glDeleteQueries(1, &m_bench_query);
         glDeleteQueries(1, &m_sample_query);
         glDeleteQueries(1, &m_fragment_query);
         glDeleteQueries(1, &m_vertex_query);
@@ -245,29 +312,135 @@ public:
         GLint64 gpu_fragments= 0;
         glGetQueryObjecti64v(m_fragment_query, GL_QUERY_RESULT, &gpu_fragments);
         printf("  %lu %.2fM fragments\n", gpu_fragments, double(gpu_fragments) / 1000000.0);
-        printf("  %.2f overshade\n", double(gpu_fragments) / double(gpu_samples));
+        //~ printf("  %.2f overshade\n", double(gpu_fragments) / double(gpu_samples));
 
         // estime ? le debit memoire sur le zbuffer
-        printf("    %.2fMB zbuffer always\n", double(gpu_fragments*8) / double(1024*1024));
-        printf("    %.2fMB zbuffer less\n", double(gpu_fragments*12) / double(1024*1024));
+        //~ printf("    %.2fMB zbuffer always\n", double(gpu_fragments*8) / double(1024*1024));
+        //~ printf("    %.2fMB zbuffer less\n", double(gpu_fragments*12) / double(1024*1024));
 
         //
         GLint64 gpu_vertices= 0;
         glGetQueryObjecti64v(m_vertex_query, GL_QUERY_RESULT, &gpu_vertices);
-        printf("  %lu %.2fM vertices\n", gpu_vertices, double(gpu_vertices) / 1000000.0);
-        printf("  vertex bw %.2f MB\n", double(gpu_vertices*sizeof(float)*8) / double(1024*1024));
-        printf("  overtransform x%.2f\n", double(m_mesh.triangle_count()*3) / double(gpu_vertices));
+        //~ printf("  %lu %.2fM vertices\n", gpu_vertices, double(gpu_vertices) / 1000000.0);
+        //~ printf("  vertex bw %.2f MB\n", double(gpu_vertices*sizeof(float)*8) / double(1024*1024));
+        //~ printf("  overtransform x%.2f\n", double(m_mesh.triangle_count()*3) / double(gpu_vertices));
         
         //
         GLint64 gpu_culling= 0;
         glGetQueryObjecti64v(m_culling_query, GL_QUERY_RESULT, &gpu_culling);
-        printf("  %lu !culled triangles / %d triangles\n", gpu_culling, m_mesh.triangle_count());
+        //~ printf("  %lu !culled triangles / %d triangles\n", gpu_culling, m_mesh.triangle_count());
         
         GLint64 gpu_clipping= 0;
         glGetQueryObjecti64v(m_clipping_query, GL_QUERY_RESULT, &gpu_clipping);
         printf("  %lu !clipped triangles / %d triangles\n", gpu_clipping, m_mesh.triangle_count());
-        printf("  %.2f pixels / triangle\n", double(gpu_samples) / double(gpu_clipping));
+        //~ printf("  %.2f pixels / triangle\n", double(gpu_samples) / double(gpu_clipping));
         
+        // on recommence sans le zbuffer
+        glDisable(GL_DEPTH_TEST);
+        
+            glUseProgram(m_program);
+            
+            //~ program_uniform(m_program, "mvpMatrix", mvp);
+            //~ program_uniform(m_program, "mvMatrix", mv);
+            
+            glBeginQuery(GL_SAMPLES_PASSED, m_sample_query);
+            glBeginQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB, m_fragment_query);
+            {
+                m_mesh.draw(m_program, /* use position */ true, /* use texcoord */ false, /* use normal */ false, /* use color */ false, /* material */ false );
+            }
+            glEndQuery(GL_SAMPLES_PASSED);
+            glEndQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB);
+
+            GLint64 gpu_zbuffer_samples= 0;
+            glGetQueryObjecti64v(m_sample_query, GL_QUERY_RESULT, &gpu_zbuffer_samples);
+            printf("  %lu %.2fM zbuffer samples\n", gpu_zbuffer_samples, double(gpu_zbuffer_samples) / 1000000.0);
+            //
+            GLint64 gpu_zbuffer_fragments= 0;
+            glGetQueryObjecti64v(m_fragment_query, GL_QUERY_RESULT, &gpu_zbuffer_fragments);
+            //~ printf("  %lu %.2fM zbuffer fragments\n", gpu_zbuffer_fragments, double(gpu_zbuffer_fragments) / 1000000.0);
+            printf("\n");
+        
+        glEnable(GL_DEPTH_TEST);
+
+        // tests synthetiques
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
+        glBindVertexArray(m_vao_triangles);
+        glUseProgram(m_program_texture);
+        
+        program_uniform(m_program_texture, "mvpMatrix", mvp);
+        program_uniform(m_program_texture, "mvMatrix", mv);
+        program_use_texture(m_program_texture, "grid", 0, m_grid_texture);        
+
+        glBeginQuery(GL_TIME_ELAPSED, m_bench_query);
+
+            int culled_triangles= m_mesh.triangle_count() - triangles_count;
+            {
+                int instances= culled_triangles / (1024*1024);
+                int n= culled_triangles % (1024*1024);
+                if(instances > 0)
+                    glDrawArraysInstanced(GL_TRIANGLES, 0, n*3, instances);
+                // et le reste...
+                glDrawArrays(GL_TRIANGLES, 0, n*3);
+                
+                printf("draw culled triangles: %d instances + %d = %d = %d - %d\n", instances, n, instances*1024*1024 + n, m_mesh.triangle_count(), triangles_count);
+            }
+            
+            // nombre de pixels acceptes par le zbuffer
+            double filled_triangles= double(gpu_samples) / double(window_width() * window_height() / 2);
+            {
+                int instances= filled_triangles / (1024*1024);
+                int n= std::ceil(filled_triangles - instances * (1024*1024));
+                if(n == 0) n= 1; 
+                
+                if(instances > 0)
+                    glDrawArraysInstanced(GL_TRIANGLES, 1024*1024*3, n*3, instances);
+                // et le reste...
+                glDrawArrays(GL_TRIANGLES, 1024*1024*3, n*3);
+                
+                printf("draw filled triangles: %lu samples = %f full triangles\n", gpu_samples, filled_triangles);
+                printf("draw filled triangles: %d instances + %d = %d\n", instances, n, instances*1024*1024 + n);
+            }
+            
+            // nombre de pixels rejetes par le zbuffer
+            double zbuffer_triangles= double(gpu_zbuffer_samples - gpu_samples) / double(window_width() * window_height() / 2);
+            {
+                int instances= zbuffer_triangles / (1024*1024);
+                int n= std::ceil(zbuffer_triangles - instances * (1024*1024));
+                if(n == 0) n= 1; 
+                
+                if(instances > 0)
+                    glDrawArraysInstanced(GL_TRIANGLES, 2*1024*1024*3, n*3, instances);
+                // et le reste...
+                glDrawArrays(GL_TRIANGLES, 2*1024*1024*3, n*3);
+                
+                printf("draw zbuffer triangles: %lu samples = %f full triangles\n", gpu_zbuffer_samples - gpu_samples, zbuffer_triangles);
+                printf("draw zbuffer triangles: %d instances + %d = %d\n", instances, n, instances*1024*1024 + n);
+            }
+    
+        glEndQuery(GL_TIME_ELAPSED);
+        
+        // mesure des perfs...
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
+        glUseProgram(m_program_texture);
+        
+        program_uniform(m_program_texture, "mvpMatrix", mvp);
+        program_uniform(m_program_texture, "mvMatrix", mv);
+        program_use_texture(m_program_texture, "grid", 0, m_grid_texture);        
+        
+        glBeginQuery(GL_TIME_ELAPSED, m_time_query);
+            m_mesh.draw(m_program_texture, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false, /* material */ false );
+        glEndQuery(GL_TIME_ELAPSED);
+        
+        
+        //
+        GLint64 gpu_draw= 0;
+        glGetQueryObjecti64v(m_time_query, GL_QUERY_RESULT, &gpu_draw);
+        GLint64 gpu_bench_draw= 0;
+        glGetQueryObjecti64v(m_bench_query, GL_QUERY_RESULT, &gpu_bench_draw);
+        
+        printf("draw mesh %.2fus, bench %.2fus\n", double(gpu_draw) / double(1000), double(gpu_bench_draw) / double(1000));
         printf("\n");
         
         //~ static int video= 0;
@@ -288,14 +461,20 @@ public:
 
 protected:
     Mesh m_mesh;
+    Mesh m_triangles;
     Orbiter m_camera;
 
+    GLuint m_vao_triangles;
+    GLuint m_program_texture;
     GLuint m_program;
     GLuint m_program_prepass;
     GLuint m_program_display;
+    GLuint m_grid_texture;
     GLuint m_texture;
     
     GLuint m_buffer;
+    GLuint m_time_query;
+    GLuint m_bench_query;
     GLuint m_sample_query;
     GLuint m_fragment_query;
     GLuint m_vertex_query;
