@@ -10,6 +10,11 @@
 #include "cgltf.h"
 #include "gltf.h"
 
+#include "SDL2/SDL_rwops.h"
+#include "SDL2/SDL_surface.h"
+#include "SDL2/SDL_image.h"
+
+
 
 Mesh read_gltf_mesh( const char *filename )
 {
@@ -72,7 +77,7 @@ Mesh read_gltf_mesh( const char *filename )
                 else
                     sprintf(tmp, "%stexture%d", pathname(filename).c_str(), i);
                 
-                if(strccmp(data->images[i].mime_type, "image/png") == 0)
+                if(strcmp(data->images[i].mime_type, "image/png") == 0)
                     strcat(tmp, ".png");
                 else if(strcmp(data->images[i].mime_type, "image/jpg") == 0)
                     strcat(tmp, ".jpg");
@@ -100,7 +105,7 @@ Mesh read_gltf_mesh( const char *filename )
                 
                 printf("writing flipped texture '%s'...\n", tmp);
                 write_image_data(image, tmp);
-                
+            
                 materials.insert_texture(tmp);
                 assert(data->images[i].uri == nullptr);
                 data->images[i].uri= strdup(tmp);       // nomme la texture / cf analyse des matieres
@@ -653,11 +658,36 @@ std::vector<ImageData> read_gltf_images( const char *filename )
 #pragma omp parallel for schedule(dynamic, 1)
     for(unsigned i= 0; i < data->images_count; i++)
     {
-        //~ printf("[%u] %s\n", i, data->images[i].uri);
         if(data->images[i].uri)
         {
+            printf("[%u] %s\n", i, data->images[i].uri);
             std::string image_filename= pathname(filename) + std::string(data->images[i].uri);
             images[i]= read_image_data(image_filename.c_str());
+        }
+        else if(data->images[i].buffer_view)
+        {
+            // extraire l'image du glb...
+            cgltf_buffer_view *view= data->images[i].buffer_view;
+            printf("[%u] ", i);
+            printf("buffer %d, offset %lu size %lu, ", int(std::distance(data->buffers, view->buffer)), view->offset, view->size);
+            printf("type '%s'\n", data->images[i].mime_type);
+            
+            //~ SDL_RWops *read= SDL_RWFromConstMem((uint8_t *) view->buffer->data + view->offset, view->size);
+            SDL_RWops *read= SDL_RWFromMem((uint8_t *) view->buffer->data + view->offset, view->size);
+            assert(read);
+            
+            if(strcmp(data->images[i].mime_type, "image/png") == 0)
+            {
+                assert(IMG_isPNG(read));
+                images[i]= image_data( IMG_LoadTyped_RW(read, /* free RWops */ 1, "png") );
+            }
+            else if(strcmp(data->images[i].mime_type, "image/jpeg") == 0)
+            {
+                assert(IMG_isJPG(read));
+                images[i]= image_data( IMG_LoadTyped_RW(read, /* free RWops */ 1, "jpeg") );
+            }
+            else
+                printf("[error] can't read internal image type '%s'...\n", data->images[i].mime_type);
         }
     }
     
@@ -817,6 +847,9 @@ GLTFScene read_gltf_scene( const char *filename )
     scene.materials= read_materials(data);
     scene.lights= read_lights(data);
     scene.cameras= read_cameras(data);
+    
+// etape : nettoyage...
+    cgltf_free(data);
     
     return scene;
 }
