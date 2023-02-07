@@ -684,9 +684,9 @@ std::vector<ImageData> read_gltf_images( const char *filename )
         {
             // extraire l'image du glb...
             cgltf_buffer_view *view= data->images[i].buffer_view;
+            assert(view->buffer->data);
             //~ printf("  [%u] offset %lu size %lu, type '%s'\n", i, view->offset, view->size, data->images[i].mime_type);
             
-            assert(view->buffer->data);
             SDL_RWops *read= SDL_RWFromConstMem((uint8_t *) view->buffer->data + view->offset, view->size);
             assert(read);
             
@@ -859,35 +859,16 @@ GLTFScene read_gltf_scene( const char *filename )
 
 std::vector<GLTFInstances> GLTFScene::instances( ) const
 {
-    // trier les noeuds par mesh
-    std::vector<GLTFNode> tmp= nodes;
-    std::sort(tmp.begin(), tmp.end(), 
-        []( const GLTFNode& a, const GLTFNode& b )
-        {
-            if(a.mesh_index != b.mesh_index)
-                return a.mesh_index < b.mesh_index;
-            return false;
-        }
-    );
+    std::vector<GLTFInstances> instances(meshes.size());
+    for(unsigned i= 0; i < meshes.size(); i++)
+        instances[i].mesh_index= i;
     
-    // assemble les transformations de chaque mesh
-    std::vector<GLTFInstances> instances;
-    
-    GLTFInstances mesh_instances= { {}, nodes[0].mesh_index };
-    int last_mesh= nodes[0].mesh_index;
     for(unsigned i= 0; i < nodes.size(); i++)
     {
-        if(nodes[i].mesh_index != last_mesh)
-        {
-            instances.push_back(mesh_instances);
-            
-            mesh_instances= { {}, nodes[i].mesh_index };
-            last_mesh= nodes[i].mesh_index;
-        }
-        
-        mesh_instances.transforms.push_back(nodes[i].model);
-    }    
-    instances.push_back(mesh_instances);
+        int index= nodes[i].mesh_index;
+        assert(index < instances.size());
+        instances[index].transforms.push_back( nodes[i].model );
+    }
     
     return instances;
 }
