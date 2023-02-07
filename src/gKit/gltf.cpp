@@ -653,6 +653,22 @@ std::vector<ImageData> read_gltf_images( const char *filename )
         return {};
     }
     
+    // detecte s'il faut charger aussi les buffers...
+    for(unsigned i= 0; i < data->images_count; i++)
+        if(!data->images[i].uri)
+        {
+            code= cgltf_load_buffers(&options, data, filename);
+            if(code != cgltf_result_success)
+            {
+                printf("[error] loading glTF internal images...\n");
+                cgltf_free(data);
+                return {};
+            }
+            
+            break;
+        }
+    
+    
     std::vector<ImageData> images(data->images_count);
     
 #pragma omp parallel for schedule(dynamic, 1)
@@ -668,26 +684,13 @@ std::vector<ImageData> read_gltf_images( const char *filename )
         {
             // extraire l'image du glb...
             cgltf_buffer_view *view= data->images[i].buffer_view;
-            printf("[%u] ", i);
-            printf("buffer %d, offset %lu size %lu, ", int(std::distance(data->buffers, view->buffer)), view->offset, view->size);
-            printf("type '%s'\n", data->images[i].mime_type);
+            //~ printf("  [%u] offset %lu size %lu, type '%s'\n", i, view->offset, view->size, data->images[i].mime_type);
             
-            //~ SDL_RWops *read= SDL_RWFromConstMem((uint8_t *) view->buffer->data + view->offset, view->size);
-            SDL_RWops *read= SDL_RWFromMem((uint8_t *) view->buffer->data + view->offset, view->size);
+            assert(view->buffer->data);
+            SDL_RWops *read= SDL_RWFromConstMem((uint8_t *) view->buffer->data + view->offset, view->size);
             assert(read);
             
-            if(strcmp(data->images[i].mime_type, "image/png") == 0)
-            {
-                assert(IMG_isPNG(read));
-                images[i]= image_data( IMG_LoadTyped_RW(read, /* free RWops */ 1, "png") );
-            }
-            else if(strcmp(data->images[i].mime_type, "image/jpeg") == 0)
-            {
-                assert(IMG_isJPG(read));
-                images[i]= image_data( IMG_LoadTyped_RW(read, /* free RWops */ 1, "jpeg") );
-            }
-            else
-                printf("[error] can't read internal image type '%s'...\n", data->images[i].mime_type);
+            images[i]= image_data( IMG_Load_RW(read, /* free RWops */ 1) );
         }
     }
     

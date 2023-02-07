@@ -141,7 +141,10 @@ int write_image( const Image& image, const char *filename )
 ImageData image_data( SDL_Surface *surface )
 {
     if(!surface)
+    {
+        //~ printf("loading image...\n");
         return {};
+    }
     
     // verifier le format, rgb ou rgba
     SDL_PixelFormat format= *surface->format;
@@ -153,7 +156,7 @@ ImageData image_data( SDL_Surface *surface )
     if(channels < 3) channels= 3;
     ImageData image(width, height, channels);
     
-    //~ printf("loading image '%s' %dx%d %d channels...\n", filename, width, height, channels);
+    //~ printf("loading image %dx%d %d channels...\n", width, height, channels);
 
     // converti les donnees en pixel rgba, et retourne l'image, origine en bas a gauche.
     if(format.BitsPerPixel == 32)
