@@ -6,8 +6,10 @@
 
 #ifdef GK_MACOS
 #include <SDL2_image/SDL_image.h>
+#include <SDL2_image/SDL_surface.h>
 #else
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_surface.h>
 #endif
 
 #include "image_io.h"
@@ -136,14 +138,12 @@ int write_image( const Image& image, const char *filename )
 }
 
 
-ImageData read_image_data( const char *filename )
+ImageData image_data( SDL_Surface *surface )
 {
-    // importer le fichier en utilisant SDL_image
-    SDL_Surface *surface= IMG_Load(filename);
-    if(surface == NULL)
+    if(!surface)
     {
-        printf("[error] loading image '%s'... sdl_image failed.\n%s\n", filename, SDL_GetError());
-        return ImageData();
+        //~ printf("loading image...\n");
+        return {};
     }
     
     // verifier le format, rgb ou rgba
@@ -156,7 +156,7 @@ ImageData read_image_data( const char *filename )
     if(channels < 3) channels= 3;
     ImageData image(width, height, channels);
     
-    printf("loading image '%s' %dx%d %d channels...\n", filename, width, height, channels);
+    //~ printf("loading image %dx%d %d channels...\n", width, height, channels);
 
     // converti les donnees en pixel rgba, et retourne l'image, origine en bas a gauche.
     if(format.BitsPerPixel == 32)
@@ -211,6 +211,19 @@ ImageData read_image_data( const char *filename )
     
     SDL_FreeSurface(surface);
     return image;
+}
+
+ImageData read_image_data( const char *filename )
+{
+    // importer le fichier en utilisant SDL_image
+    SDL_Surface *surface= IMG_Load(filename);
+    if(surface == NULL)
+    {
+        printf("[error] loading image '%s'... sdl_image failed.\n%s\n", filename, SDL_GetError());
+        return ImageData();
+    }
+    
+    return image_data(surface);
 }
 
 int write_image_data( ImageData& image, const char *filename )
