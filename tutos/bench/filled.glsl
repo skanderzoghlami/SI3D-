@@ -26,7 +26,7 @@ layout(early_fragment_tests) in;
 void main( )
 {
     vec3 n= normalize( cross(dFdx(vertex_position), dFdy(vertex_position)) );
-    
     fragment_color= vec4(abs(n.zzz), 1);
+    //~ fragment_color= vec4(1);
 }
 #endif

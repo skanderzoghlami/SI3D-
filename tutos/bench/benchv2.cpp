@@ -41,10 +41,11 @@ public:
     {
         m_widgets= create_widgets();
         
-        //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/rungholt/rungholt.obj");
+        m_mesh= read_mesh_fast("/home/jciehl/scenes/rungholt/rungholt.obj");
+        //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/spaceship/export.obj");
         //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/sponza-intel/export.obj");
         //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/history/museumhallRD.obj");
-        m_mesh= read_mesh_fast("/home/jciehl/scenes/history/export.obj");
+        //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/history/export.obj");
         //~ m_mesh= read_mesh_fast("data/bigguy.obj");
         
         Point pmin, pmax;
@@ -328,7 +329,7 @@ public:
         glBindImageTexture(0, m_texture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_R32UI);
         program_uniform(m_program, "image", 0);
         
-    glDisable(GL_DEPTH_TEST);
+    //~ glDisable(GL_DEPTH_TEST);
         
         glBeginQuery(GL_SAMPLES_PASSED, m_sample_query);
         glBeginQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB, m_fragment_query);
@@ -344,7 +345,7 @@ public:
         glEndQuery(GL_CLIPPING_INPUT_PRIMITIVES_ARB);         // reussi le test de front/back face culling
         glEndQuery(GL_CLIPPING_OUTPUT_PRIMITIVES_ARB);
         
-    glEnable(GL_DEPTH_TEST);
+    //~ glEnable(GL_DEPTH_TEST);
         
     #if 0
         if(key_state(' ') == 0)
@@ -398,7 +399,8 @@ public:
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, m_vertex_filled_buffer);
             
             // met le compteur a zero
-            glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, 0, sizeof(unsigned), GL_RED_INTEGER, GL_UNSIGNED_INT, nullptr);
+            unsigned zero= 0;
+            glClearBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, 0, sizeof(unsigned), GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
             
             glUseProgram(m_program_filled);
             
@@ -408,7 +410,8 @@ public:
             glDispatchCompute(groups, 1, 1);
             //~ printf("compute %d groups %d\n", groups, groups * 1024);
             
-            glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+            
+            //~ glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
             
             //~ glBindVertexArray(m_vao_filled_triangles);
             //~ glUseProgram(m_program_filled_display);
@@ -423,6 +426,8 @@ public:
                 //~ printf("%u filled triangles\n", n);
             
             //~ return 1;
+            
+            glMemoryBarrier(GL_ALL_BARRIER_BITS);
         }
     #endif
     
@@ -501,71 +506,76 @@ public:
         program_uniform(m_program_texture, "mvMatrix", Identity());
         program_use_texture(m_program_texture, "grid", 0, m_grid_texture);        
 
-        glBeginQuery(GL_TIME_ELAPSED, m_bench1_query);
-            //~ int culled_triangles= m_mesh.triangle_count() - triangles_count;
-            int culled_triangles= m_mesh.triangle_count();      // transforme tous les triangles...
-            {
-                int instances= culled_triangles / (1024*1024);
-                int n= culled_triangles % (1024*1024);
-                if(instances == 0 && n == 0) n= 1;
-                
+        //~ int culled_triangles= m_mesh.triangle_count() - triangles_count;
+        int culled_triangles= m_mesh.triangle_count();      // transforme tous les triangles...
+        {
+            int instances= culled_triangles / (1024*1024);
+            int n= culled_triangles % (1024*1024);
+            if(instances == 0 && n == 0) n= 1;
+            
+            glBeginQuery(GL_TIME_ELAPSED, m_bench1_query);
                 if(instances > 0)
                     glDrawArraysInstanced(GL_TRIANGLES, 0, n*3, instances);
                 if(n > 0)
                     glDrawArrays(GL_TRIANGLES, 0, n*3);
+            glEndQuery(GL_TIME_ELAPSED);
                 
-                printf("draw culled triangles: %d instances + %d = %d = %d - %d\n", instances, n, instances*1024*1024 + n, m_mesh.triangle_count(), triangles_count);
-            }
-        glEndQuery(GL_TIME_ELAPSED);
+            printf("draw culled triangles: %d instances + %d = %d = %d - %d\n", instances, n, instances*1024*1024 + n, m_mesh.triangle_count(), triangles_count);
+        }
             
         // nombre de pixels acceptes par le zbuffer
-        glBeginQuery(GL_TIME_ELAPSED, m_bench2_query);
-            double filled_triangles= double(gpu_samples) / double(window_width() * window_height() / 2);
-            {
-                int instances= filled_triangles / (1024*1024);
-                int n= std::ceil(filled_triangles - instances * (1024*1024));
-                if(instances == 0 && n == 0) n= 1;
-                
+        double filled_triangles= double(gpu_samples) / double(window_width() * window_height() / 2);
+        {
+            int instances= filled_triangles / (1024*1024);
+            int n= std::ceil(filled_triangles - instances * (1024*1024));
+            if(instances == 0 && n == 0) n= 1;
+            
+            glBeginQuery(GL_TIME_ELAPSED, m_bench2_query);
                 if(instances > 0)
                     glDrawArraysInstanced(GL_TRIANGLES, 1*1024*1024*3, n*3, instances);
                 if(n > 0)
                     glDrawArrays(GL_TRIANGLES, 1*1024*1024*3, n*3);
-                
-                printf("draw filled triangles: %lu samples = %f full triangles\n", gpu_samples, filled_triangles);
-                printf("draw filled triangles: %d instances + %d = %d\n", instances, n, instances*1024*1024 + n);
-            }
-        glEndQuery(GL_TIME_ELAPSED);
+            glEndQuery(GL_TIME_ELAPSED);
+            
+            printf("draw filled triangles: %lu samples = %f full triangles\n", gpu_samples, filled_triangles);
+            printf("draw filled triangles: %d instances + %d = %d\n", instances, n, instances*1024*1024 + n);
+        }
         
         // nombre de pixels rejetes par le zbuffer
-        glBeginQuery(GL_TIME_ELAPSED, m_bench3_query);
-            double zbuffer_triangles= double(gpu_zbuffer_samples - gpu_samples) / double(window_width() * window_height() / 2);
-            {
-                int instances= zbuffer_triangles / (1024*1024);
-                int n= std::ceil(zbuffer_triangles - instances * (1024*1024));
-                if(instances == 0 && n == 0) n= 1;
-                
+        double zbuffer_triangles= double(gpu_zbuffer_samples - gpu_samples) / double(window_width() * window_height() / 2);
+        {
+            int instances= zbuffer_triangles / (1024*1024);
+            int n= std::ceil(zbuffer_triangles - instances * (1024*1024));
+            if(instances == 0 && n == 0) n= 1;
+            
+            glBeginQuery(GL_TIME_ELAPSED, m_bench3_query);
                 if(instances > 0)
                     glDrawArraysInstanced(GL_TRIANGLES, 2*1024*1024*3, n*3, instances);
                 if(n > 0)
                     glDrawArrays(GL_TRIANGLES, 2*1024*1024*3, n*3);
-                
-                //~ printf("draw zbuffer triangles: %lu samples = %f full triangles\n", gpu_zbuffer_samples - gpu_samples, zbuffer_triangles);
-                printf("draw zbuffer triangles: %d instances + %d = %d\n", instances, n, instances*1024*1024 + n);
-            }
-        glEndQuery(GL_TIME_ELAPSED);
+            glEndQuery(GL_TIME_ELAPSED);
+            
+            //~ printf("draw zbuffer triangles: %lu samples = %f full triangles\n", gpu_zbuffer_samples - gpu_samples, zbuffer_triangles);
+            printf("draw zbuffer triangles: %d instances + %d = %d\n", instances, n, instances*1024*1024 + n);
+        }
         
+    #if 1
         // triangles acceptes par le zbuffer
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
-        glBeginQuery(GL_TIME_ELAPSED, m_bench4_query);
+        glBindVertexArray(m_vao_filled_triangles);
+        glUseProgram(m_program_filled_display);
+        program_uniform(m_program_filled_display, "mvpMatrix", mvp);
+        program_uniform(m_program_filled_display, "mvMatrix", mv);
         
-            glUseProgram(m_program_filled_display);
-            program_uniform(m_program_filled_display, "mvpMatrix", mvp);
-            program_uniform(m_program_filled_display, "mvMatrix", mv);
+        glBeginQuery(GL_TIME_ELAPSED, m_bench4_query);
             
             glDrawArrays(GL_TRIANGLES, 0, triangles_count*3);
+            
         glEndQuery(GL_TIME_ELAPSED);
+    #endif
         
+    #if 1
         // mesure des perfs...
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
@@ -580,7 +590,7 @@ public:
             m_mesh.draw(m_program_texture, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false, /* material */ false );
         
         glEndQuery(GL_TIME_ELAPSED);
-        
+    #endif
         
         //
         GLint64 gpu_draw= 0;
