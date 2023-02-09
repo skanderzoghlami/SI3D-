@@ -866,7 +866,7 @@ std::vector<GLTFInstances> GLTFScene::instances( ) const
     for(unsigned i= 0; i < nodes.size(); i++)
     {
         int index= nodes[i].mesh_index;
-        assert(index < instances.size());
+        assert(index < int(instances.size()));
         instances[index].transforms.push_back( nodes[i].model );
     }
     
