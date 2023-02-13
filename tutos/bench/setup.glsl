@@ -20,12 +20,12 @@ void main( )
 
 #ifdef FRAGMENT_SHADER
 
-layout(early_fragment_tests) in;
 
 layout(binding= 0, r32ui) coherent uniform uimage2D image;
 
 out vec4 fragment_color;
 
+layout(early_fragment_tests) in;
 void main( )
 {
     ivec2 tile= ivec2(gl_FragCoord.xy) / 8;
@@ -41,6 +41,8 @@ void main( )
         int first_primitive_id= readFirstInvocationARB(gl_PrimitiveID);
         int first_tile_id= readFirstInvocationARB(tile_id);
         if(tile_id == first_tile_id && gl_PrimitiveID == first_primitive_id)
+        //~ if(tile_id == first_tile_id)
+        //~ if(gl_PrimitiveID == first_primitive_id)
             break;
     }
     

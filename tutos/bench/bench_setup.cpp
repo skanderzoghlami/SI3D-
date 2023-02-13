@@ -25,22 +25,20 @@ public:
     
     int init( )
     {        
-        //~ m_program= read_program("tutos/tuto_storage_texture.glsl");
-        m_program= read_program("tutos/setup.glsl");
+        m_program= read_program("tutos/bench/setup.glsl");
         program_print_errors(m_program);
         
-        //~ m_program_display= read_program("tutos/storage_texture_display.glsl");
-        m_program_display= read_program("tutos/setup_display.glsl");
+        m_program_display= read_program("tutos/bench/setup_display.glsl");
         program_print_errors(m_program_display);
 
         if(program_errors(m_program) || program_errors(m_program_display))
             return -1;
         
-        //~ m_mesh= read_mesh("data/bigguy.obj");
-        //~ m_mesh= read_mesh("/home/jciehl/scenes/");
-        //~ m_mesh= read_mesh("/home/jciehl/scenes/bistro/interior.obj");
-        //~ m_mesh= read_mesh("/home/jciehl/scenes/bistro/exterior.obj");
-        m_mesh= read_mesh_fast("/home/jciehl/scenes/rungholt/rungholt.obj");
+        //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/bistro/interior.obj");
+        //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/bistro/exterior.obj");
+        //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/rungholt/rungholt.obj");
+        //~ m_mesh= read_mesh_fast("data/cube.obj");
+        m_mesh= read_mesh_fast("data/bigguy.obj");
         
         Point pmin, pmax;
         m_mesh.bounds(pmin, pmax);
@@ -62,6 +60,7 @@ public:
         glClearDepth(1.f);                          // profondeur par defaut
         glDepthFunc(GL_LEQUAL);                       // ztest, conserver l'intersection la plus proche de la m_camera
         glEnable(GL_DEPTH_TEST);                    // activer le ztest
+        //~ glDisable(GL_DEPTH_TEST);                    // activer le ztest
         
         glFrontFace(GL_CCW);
         glCullFace(GL_BACK);
@@ -119,15 +118,12 @@ public:
         if(key_state('r'))
         {
             clear_key_state('r');
-            //~ reload_program(m_program, "tutos/tuto_storage_texture.glsl");
-            reload_program(m_program, "tutos/setup.glsl");
+            reload_program(m_program, "tutos/bench/setup.glsl");
             program_print_errors(m_program);
             
-            //~ reload_program(m_program_display, "tutos/storage_texture_display.glsl");
-            reload_program(m_program_display, "tutos/setup_display.glsl");
+            reload_program(m_program_display, "tutos/bench/setup_display.glsl");
             program_print_errors(m_program_display);            
         }
-        
         
         // passe 1 : compter le nombre de fragments par pixel
         glUseProgram(m_program);
@@ -157,7 +153,7 @@ public:
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
             
             // RE-selectionne la texture sur l'unite image 0 / LECTURE SEULE
-            glBindImageTexture(0, m_texture, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32UI);
+            //~ glBindImageTexture(0, m_texture, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32UI);
             program_uniform(m_program_display, "image", 0);
             
             glDrawArrays(GL_TRIANGLES, 0, 3);
