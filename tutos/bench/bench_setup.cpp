@@ -37,8 +37,8 @@ public:
         //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/bistro/interior.obj");
         //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/bistro/exterior.obj");
         //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/rungholt/rungholt.obj");
-        //~ m_mesh= read_mesh_fast("data/cube.obj");
-        m_mesh= read_mesh_fast("data/bigguy.obj");
+        m_mesh= read_mesh_fast("data/cube.obj");
+        //~ m_mesh= read_mesh_fast("data/bigguy.obj");
         
         Point pmin, pmax;
         m_mesh.bounds(pmin, pmax);
@@ -57,6 +57,11 @@ public:
         // blocs par triangle
         glGenBuffers(1, &m_tile_buffer);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_tile_buffer);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(unsigned) * m_mesh.triangle_count(), nullptr, GL_STATIC_COPY);
+        
+        // fragments par triangle
+        glGenBuffers(1, &m_fragment_buffer);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_fragment_buffer);
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(unsigned) * m_mesh.triangle_count(), nullptr, GL_STATIC_COPY);
         
         // etat openGL par defaut
@@ -167,6 +172,9 @@ public:
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_tile_buffer);
         glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
         
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_fragment_buffer);
+        glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
+        
         // indiquer quels attributs de sommets du mesh sont necessaires a l'execution du shader.
         // le shader n'utilise que position. les autres de servent a rien.
         m_mesh.draw(m_program, /* use position */ true, /* use texcoord */ false, /* use normal */ false, /* use color */ false, /* material */ false );
@@ -189,23 +197,36 @@ public:
     // etape 2 : recupere le buffer
         glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
         
-        std::vector<unsigned> tmp(m_mesh.triangle_count());
-        glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, tmp.size() * sizeof(unsigned), tmp.data());
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_tile_buffer);
+        std::vector<unsigned> tiles(m_mesh.triangle_count());
+        glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, tiles.size() * sizeof(unsigned), tiles.data());
         
-        // compte les triangles reellement rasterizes, ie avec des fragments... 
-        unsigned tiles= 0;
-        unsigned n= 0;
-        for(unsigned i= 0; i < tmp.size(); i++)
-        {
-            if(tmp[i] > 0)
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_fragment_buffer);
+        std::vector<unsigned> fragments(m_mesh.triangle_count());
+        glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, fragments.size() * sizeof(unsigned), fragments.data());
+        
+    // etape 3 : compte les triangles reellement rasterizes, ie avec des fragments... 
+        unsigned tiles_count= 0;
+        for(unsigned i= 0; i < tiles.size(); i++)
+            if(tiles[i] > 0)
+                tiles_count+= tiles[i];
+        
+        unsigned fragments_count= 0;
+        unsigned triangles_count= 0;
+        for(unsigned i= 0; i < fragments.size(); i++)
+            if(fragments[i] > 0)
             {
-                n++;
-                tiles+= tmp[i];
+                triangles_count++;
+                fragments_count+= fragments[i];
             }
-        }
         
-        printf("%u rasterized triangles\n", n);
-        printf("%u tiles, %.2f tiles/triangle\n", tiles, float(tiles)/float(n));
+        printf("%u rasterized triangles\n", triangles_count);
+        printf("%u tiles, %.2f tiles/triangle, %.2f 8x8\n", tiles_count, float(tiles_count)/float(triangles_count), float(tiles_count*64)/float(triangles_count));
+        printf("%u fragments, %.2f fragments/triangle\n", fragments_count, float(fragments_count)/float(triangles_count));
+        
+        float area= float(fragments_count)/float(triangles_count);
+        float tile_area= float(tiles_count*64)/float(triangles_count);
+        printf("  %.2f overrasterization\n", tile_area / area);
         
         return 1;
     }
@@ -218,6 +239,7 @@ protected:
     GLuint m_program_display;
     GLuint m_texture;
     GLuint m_tile_buffer;
+    GLuint m_fragment_buffer;
 };
 
 
