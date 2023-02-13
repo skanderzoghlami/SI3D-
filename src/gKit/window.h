@@ -58,7 +58,6 @@ SDL_TextInputEvent text_event( );
 //! desactive l'evenement.
 void clear_text_event( );
 
-
 //! renvoie le temps ecoule depuis le lancement de l'application, en millisecondes.
 float global_time( );
 //! renvoie le temps ecoule depuis la derniere frame, en millisecondes.

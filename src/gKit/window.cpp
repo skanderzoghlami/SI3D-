@@ -7,6 +7,7 @@
 #include <cstring>
 #include <cmath>
 
+#include <chrono>
 #include <vector>
 #include <set>
 #include <string>
@@ -105,25 +106,23 @@ void clear_wheel_event( )
 
 
 //
-static unsigned int last_time= 0;
-static unsigned int last_delta= 1;
+static std::chrono::high_resolution_clock::time_point app_start= {};
+static std::chrono::high_resolution_clock::time_point last_time= {};
+static float last_delta= 0;
 
 float global_time( )
 {
-    unsigned int now= SDL_GetTicks();
-
-    // ecoulement du temps strictement croissant...
-    if(now <= last_time)
-        now= last_time +1;
-
-    last_delta= now - last_time;
+    std::chrono::high_resolution_clock::time_point now= std::chrono::high_resolution_clock::now();
+    last_delta= float(std::chrono::duration_cast<std::chrono::microseconds>(now - last_time).count()) / float(1000);
     last_time= now;
-    return (float) last_time;
+    
+    return float(std::chrono::duration_cast<std::chrono::microseconds>(now - app_start).count()) / float(1000);
 }
 
 float delta_time( )
 {
-    return (float) last_delta;
+// pas super utile, a virer ?
+    return last_delta;
 }
 
 // etat de l'application.
@@ -169,6 +168,7 @@ int events( Window window )
                 {
                     // traite l'evenement apres la boucle... 
                     resize_event= true;
+                    
                     // conserve les proportions de la fenetre
                     width= event.window.data1;
                     height= event.window.data2;
@@ -366,6 +366,9 @@ Context create_context( Window window )
         if(n > 1)
             printf("MSAA %d samples\n", n);
     }
+    
+    //
+    app_start= std::chrono::high_resolution_clock::now();
     
 #ifndef NO_GLEW
     // initialise les extensions opengl

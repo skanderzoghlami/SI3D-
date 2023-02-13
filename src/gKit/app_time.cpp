@@ -8,9 +8,8 @@
 AppTime::AppTime( const int width, const int height, const int major, const int minor, const int samples ) 
     : App(width, height, major, minor, samples)
 {
-    // desactive vsync pour les mesures de temps
-    SDL_GL_SetSwapInterval(0);
-    printf("[Apptime] vsync OFF...\n");
+    // desactive les synchros...
+    vsync_off();
     
     // requete pour mesurer le temps gpu
     glGenQueries(1, &m_time_query);

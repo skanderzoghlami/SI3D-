@@ -40,8 +40,12 @@ protected:
     virtual int prerender( ) { return update(global_time(), delta_time()); }
     virtual int postrender( ) { return 0; }
 
+    void vsync_off( );
+    
     Window m_window;
     Context m_context;
+    
+    bool sync;
 };
 
 
