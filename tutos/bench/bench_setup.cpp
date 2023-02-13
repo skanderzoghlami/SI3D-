@@ -54,13 +54,18 @@ public:
         // pas la peine de construire les mipmaps / pas possible pour une texture int / uint
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
         
+        // blocs par triangle
+        glGenBuffers(1, &m_tile_buffer);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_tile_buffer);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(unsigned) * m_mesh.triangle_count(), nullptr, GL_STATIC_COPY);
+        
         // etat openGL par defaut
         glClearColor(0.2f, 0.2f, 0.2f, 1.f);        // couleur par defaut de la fenetre
         
         glClearDepth(1.f);                          // profondeur par defaut
         glDepthFunc(GL_LEQUAL);                       // ztest, conserver l'intersection la plus proche de la m_camera
-        glEnable(GL_DEPTH_TEST);                    // activer le ztest
-        //~ glDisable(GL_DEPTH_TEST);                    // activer le ztest
+        //~ glEnable(GL_DEPTH_TEST);                    // activer le ztest
+        glDisable(GL_DEPTH_TEST);                    // activer le ztest
         
         glFrontFace(GL_CCW);
         glCullFace(GL_BACK);
@@ -125,20 +130,42 @@ public:
             program_print_errors(m_program_display);            
         }
         
-        // passe 1 : compter le nombre de fragments par pixel
-        glUseProgram(m_program);
+        static int time= 1;
+        static Transform last_model= Identity(); 
         
-        Transform model= RotationY(global_time() / 60);
+        if(key_state('t'))
+        {
+            clear_key_state('t');
+            time= (time+1) %2;
+        }
+        
+        Transform model;
+        if(time)
+        {
+            model= RotationY(global_time() / 60);
+            last_model= model;
+        }
+        else
+        {
+            model= last_model;
+        }
+        //~ Transform model= RotationY(global_time() / 60);
+        
         Transform view= m_camera.view();
         Transform projection= m_camera.projection(window_width(), window_height(), 45);
         Transform mv= view * model;
         Transform mvp= projection * mv;
         
+    // etape 1 : compter le nombre de fragments par pixel
+        glUseProgram(m_program);
         program_uniform(m_program, "mvpMatrix", mvp);
         
         // selectionne la texture sur l'unite image 0, operations atomiques / lecture + ecriture
         glBindImageTexture(0, m_texture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_R32UI);
         program_uniform(m_program, "image", 0);
+        
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_tile_buffer);
+        glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
         
         // indiquer quels attributs de sommets du mesh sont necessaires a l'execution du shader.
         // le shader n'utilise que position. les autres de servent a rien.
@@ -159,6 +186,27 @@ public:
             glDrawArrays(GL_TRIANGLES, 0, 3);
         }
         
+    // etape 2 : recupere le buffer
+        glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
+        
+        std::vector<unsigned> tmp(m_mesh.triangle_count());
+        glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, tmp.size() * sizeof(unsigned), tmp.data());
+        
+        // compte les triangles reellement rasterizes, ie avec des fragments... 
+        unsigned tiles= 0;
+        unsigned n= 0;
+        for(unsigned i= 0; i < tmp.size(); i++)
+        {
+            if(tmp[i] > 0)
+            {
+                n++;
+                tiles+= tmp[i];
+            }
+        }
+        
+        printf("%u rasterized triangles\n", n);
+        printf("%u tiles, %.2f tiles/triangle\n", tiles, float(tiles)/float(n));
+        
         return 1;
     }
 
@@ -169,6 +217,7 @@ protected:
     GLuint m_program;
     GLuint m_program_display;
     GLuint m_texture;
+    GLuint m_tile_buffer;
 };
 
 

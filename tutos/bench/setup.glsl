@@ -20,8 +20,12 @@ void main( )
 
 #ifdef FRAGMENT_SHADER
 
-
 layout(binding= 0, r32ui) coherent uniform uimage2D image;
+
+layout(binding= 0) buffer triangleData
+{
+    uint triangles[];
+};
 
 out vec4 fragment_color;
 
@@ -36,17 +40,17 @@ void main( )
         uint first= readFirstInvocationARB(gl_SubGroupInvocationARB);
         
         if(gl_SubGroupInvocationARB == first)
+        {
             imageAtomicAdd(image, tile, 1);
+            atomicAdd(triangles[gl_PrimitiveID], 1);
+        }
         
         int first_primitive_id= readFirstInvocationARB(gl_PrimitiveID);
         int first_tile_id= readFirstInvocationARB(tile_id);
         if(tile_id == first_tile_id && gl_PrimitiveID == first_primitive_id)
-        //~ if(tile_id == first_tile_id)
-        //~ if(gl_PrimitiveID == first_primitive_id)
             break;
     }
     
-    //~ imageAtomicAdd(image, ivec2(gl_FragCoord.xy), 1);
     fragment_color= vec4(1, 0, 0, 1);
 }
 #endif
