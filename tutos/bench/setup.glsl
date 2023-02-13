@@ -22,19 +22,19 @@ void main( )
 
 layout(binding= 0, r32ui) coherent uniform uimage2D image;
 
-layout(binding= 0) buffer triangleData1
+layout(binding= 0) coherent buffer triangleData1
 {
     uint tiles[];
 };
 
-layout(binding= 1) buffer triangleData2
+layout(binding= 1) coherent buffer triangleData2
 {
     uint fragments[];
 };
 
 out vec4 fragment_color;
 
-layout(early_fragment_tests) in;
+//~ layout(early_fragment_tests) in;
 void main( )
 {
     ivec2 tile= ivec2(gl_FragCoord.xy) / 8;

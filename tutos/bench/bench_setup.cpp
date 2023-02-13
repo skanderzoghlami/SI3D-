@@ -1,6 +1,7 @@
 
 //! \file tuto_storage_texture.cpp  exemple direct d'utilisation d'une storage texture / image.  le fragment shader compte combien de fragments sont calcules par pixel.
 
+#include "app.h"
 #include "app_time.h"
 
 #include "vec.h"
@@ -17,11 +18,11 @@
 #include "orbiter.h"
 
 
-class StorageImage : public AppTime
+class StorageImage : public App
 {
 public:
     // application openGL 4.3
-    StorageImage( ) : AppTime(1024, 640,  4, 3) {}
+    StorageImage( ) : App(1024, 640,  4, 3) {}
     
     int init( )
     {        
@@ -34,10 +35,21 @@ public:
         if(program_errors(m_program) || program_errors(m_program_display))
             return -1;
         
+        m_grid_texture= read_texture(0, "data/grid.png");
+        
+        m_program_texture= read_program("tutos/bench/vertex2.glsl");
+        program_print_errors(m_program_texture);
+        
+        m_program_tile= read_program("tutos/bench/vertex_tile.glsl");
+        program_print_errors(m_program_tile);
+        
+        if(program_errors(m_program_texture) || program_errors(m_program_tile))
+            return -1;
+        
         //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/bistro/interior.obj");
-        //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/bistro/exterior.obj");
+        m_mesh= read_mesh_fast("/home/jciehl/scenes/bistro/exterior.obj");
         //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/rungholt/rungholt.obj");
-        m_mesh= read_mesh_fast("data/cube.obj");
+        //~ m_mesh= read_mesh_fast("data/cube.obj");
         //~ m_mesh= read_mesh_fast("data/bigguy.obj");
         
         Point pmin, pmax;
@@ -63,6 +75,9 @@ public:
         glGenBuffers(1, &m_fragment_buffer);
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_fragment_buffer);
         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(unsigned) * m_mesh.triangle_count(), nullptr, GL_STATIC_COPY);
+        
+        glGenQueries(1, &m_time_query);
+        glGenQueries(1, &m_tile_query);
         
         // etat openGL par defaut
         glClearColor(0.2f, 0.2f, 0.2f, 1.f);        // couleur par defaut de la fenetre
@@ -197,12 +212,12 @@ public:
     // etape 2 : recupere le buffer
         glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
         
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_tile_buffer);
         std::vector<unsigned> tiles(m_mesh.triangle_count());
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_tile_buffer);
         glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, tiles.size() * sizeof(unsigned), tiles.data());
         
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_fragment_buffer);
         std::vector<unsigned> fragments(m_mesh.triangle_count());
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_fragment_buffer);
         glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, fragments.size() * sizeof(unsigned), fragments.data());
         
     // etape 3 : compte les triangles reellement rasterizes, ie avec des fragments... 
@@ -224,9 +239,51 @@ public:
         printf("%u tiles, %.2f tiles/triangle, %.2f 8x8\n", tiles_count, float(tiles_count)/float(triangles_count), float(tiles_count*64)/float(triangles_count));
         printf("%u fragments, %.2f fragments/triangle\n", fragments_count, float(fragments_count)/float(triangles_count));
         
-        float area= float(fragments_count)/float(triangles_count);
-        float tile_area= float(tiles_count*64)/float(triangles_count);
-        printf("  %.2f overrasterization\n", tile_area / area);
+        printf("  %.2f overrasterization\n", float(tiles_count*64) / float(fragments_count));
+        
+        
+        glEnable(GL_DEPTH_TEST);                    // activer le ztest
+        {
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            
+            glUseProgram(m_program_texture);
+            program_uniform(m_program_texture, "mvpMatrix", mvp);
+            program_uniform(m_program_texture, "mvMatrix", mv);
+            program_use_texture(m_program_texture, "grid", 0, m_grid_texture);        
+            
+            glBeginQuery(GL_TIME_ELAPSED, m_time_query);
+                
+                m_mesh.draw(m_program_texture, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false, /* material */ false );
+            
+            glEndQuery(GL_TIME_ELAPSED);
+        }
+        
+        {
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            
+            glUseProgram(m_program_tile);
+            program_uniform(m_program_tile, "mvpMatrix", mvp);
+            
+            glBeginQuery(GL_TIME_ELAPSED, m_tile_query);
+                
+                m_mesh.draw(m_program_tile, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false, /* material */ false );
+            
+            glEndQuery(GL_TIME_ELAPSED);
+        }
+        
+        // dessiner le meme nombre de tiles ?
+        
+        
+        glDisable(GL_DEPTH_TEST);
+        
+        //
+        GLint64 gpu_draw= 0;
+        glGetQueryObjecti64v(m_time_query, GL_QUERY_RESULT, &gpu_draw);
+        GLint64 tile_draw= 0;
+        glGetQueryObjecti64v(m_tile_query, GL_QUERY_RESULT, &tile_draw);
+        
+        printf("%.2fus draw\n", float(gpu_draw) / float(1000));
+        printf("%.2fus tile draw\n", float(tile_draw) / float(1000));
         
         return 1;
     }
@@ -237,7 +294,15 @@ protected:
 
     GLuint m_program;
     GLuint m_program_display;
+    GLuint m_program_texture;
+    GLuint m_program_tile;
+    
     GLuint m_texture;
+    GLuint m_grid_texture;
+    
+    GLuint m_time_query;
+    GLuint m_tile_query;
+
     GLuint m_tile_buffer;
     GLuint m_fragment_buffer;
 };
