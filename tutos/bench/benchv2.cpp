@@ -34,7 +34,10 @@ class Bench : public AppCamera
 {
 public:
     // application openGL 4.3
-    Bench( ) : AppCamera(1024, 512,  4, 3) {}
+    Bench( ) : AppCamera(1024, 512,  4, 3) 
+    {
+        vsync_off();
+    }
     //~ Bench( ) : AppTime(2048, 1024,  4, 3) {}
     
     int init( )
@@ -515,7 +518,7 @@ public:
             
             glBeginQuery(GL_TIME_ELAPSED, m_bench1_query);
                 if(instances > 0)
-                    glDrawArraysInstanced(GL_TRIANGLES, 0, n*3, instances);
+                    glDrawArraysInstanced(GL_TRIANGLES, 0, 1024*1024*3, instances);
                 if(n > 0)
                     glDrawArrays(GL_TRIANGLES, 0, n*3);
             glEndQuery(GL_TIME_ELAPSED);
@@ -532,7 +535,7 @@ public:
             
             glBeginQuery(GL_TIME_ELAPSED, m_bench2_query);
                 if(instances > 0)
-                    glDrawArraysInstanced(GL_TRIANGLES, 1*1024*1024*3, n*3, instances);
+                    glDrawArraysInstanced(GL_TRIANGLES, 1*1024*1024*3, 1024*1024*3, instances);
                 if(n > 0)
                     glDrawArrays(GL_TRIANGLES, 1*1024*1024*3, n*3);
             glEndQuery(GL_TIME_ELAPSED);
@@ -550,7 +553,7 @@ public:
             
             glBeginQuery(GL_TIME_ELAPSED, m_bench3_query);
                 if(instances > 0)
-                    glDrawArraysInstanced(GL_TRIANGLES, 2*1024*1024*3, n*3, instances);
+                    glDrawArraysInstanced(GL_TRIANGLES, 2*1024*1024*3, 1024*1024*3, instances);
                 if(n > 0)
                     glDrawArrays(GL_TRIANGLES, 2*1024*1024*3, n*3);
             glEndQuery(GL_TIME_ELAPSED);
