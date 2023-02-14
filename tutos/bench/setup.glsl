@@ -7,7 +7,7 @@
 
 #ifdef VERTEX_SHADER
 
-in vec3 position;
+layout(location =0) in vec3 position;
 
 uniform mat4 mvpMatrix;
 
@@ -40,12 +40,16 @@ void main( )
     ivec2 tile= ivec2(gl_FragCoord.xy) / ivec2(8, 4);
     int tile_id= tile.y * 1024 + tile.x;
 	
-    int n= 0;
     // tiles par triangle
     while(true)
     {
-        n++;
-        // selectionne un thread du groupe
+		// vire les helpers...
+        int helper= gl_HelperInvocation ? 1 : 0;
+        int first_helper= readFirstInvocationARB(helper);
+        if(first_helper == 1 && helper == first_helper)
+            break;
+			
+		// selectionne un thread du groupe
         uint first= readFirstInvocationARB(gl_SubGroupInvocationARB);
         if(gl_SubGroupInvocationARB == first)
         {
@@ -63,7 +67,6 @@ void main( )
     // fragments par triangle
     atomicAdd(fragments[gl_PrimitiveID], 1);
     
-    int first_n= readFirstInvocationARB(n);
-    fragment_color= vec4(float(first_n), 0, 0, 1);
+    fragment_color= vec4(1, 0, 0, 1);
 }
 #endif

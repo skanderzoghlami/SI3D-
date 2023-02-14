@@ -51,48 +51,34 @@ public:
         
         //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/bistro/interior.obj");
         //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/bistro/exterior.obj");
-        //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/rungholt/rungholt.obj");
-        m_mesh= read_mesh_fast("data/cube.obj");
+        m_mesh= read_mesh_fast("/home/jciehl/scenes/rungholt/rungholt.obj");
+        //~ m_mesh= read_mesh_fast("data/cube.obj");
         //~ m_mesh= read_mesh_fast("data/bigguy.obj");
     
         Point pmin, pmax;
         m_mesh.bounds(pmin, pmax);
         m_camera.lookat(pmin, pmax);
         
-    #if 1
-        //~ m_triangles= Mesh(GL_TRIANGLES);
-        //~ for(int i= 0; i < 1024*1024; i++)
-        //~ {
-            //~ m_triangles.texcoord(0, 0);
-            //~ m_triangles.normal(0, 0, 1);
-            //~ m_triangles.vertex(-1, -1, 0);
-            
-            //~ m_triangles.texcoord(1, 0);
-            //~ m_triangles.normal(0, 0, 1);
-            //~ m_triangles.vertex( 1, -1, 0);
-            
-            //~ m_triangles.texcoord(1, 1);
-            //~ m_triangles.normal(0, 0, 1);
-            //~ m_triangles.vertex( 1,  1, 0);
-        //~ }
-        
-        m_mesh= Mesh(GL_TRIANGLES);
-        //~ for(int i= 0; i < 1024*1024; i++)
-        for(int i= 0; i < 1; i++)
+        // tests synthetiques
+        m_triangles= Mesh(GL_TRIANGLES);
+        for(int i= 0; i < 1024; i++)
         {
-            m_mesh.texcoord(0, 0);
-            m_mesh.normal(0, 0, 1);
-            m_mesh.vertex(-1, -1, 0);
+            m_triangles.texcoord(0, 0);
+            m_triangles.normal(0, 0, 1);
+            m_triangles.vertex(-1, -1, 0);
             
-            m_mesh.texcoord(1, 0);
-            m_mesh.normal(0, 0, 1);
-            m_mesh.vertex( 1, -1, 0);
+            m_triangles.texcoord(1, 0);
+            m_triangles.normal(0, 0, 1);
+            m_triangles.vertex( 1, -1, 0);
             
-            m_mesh.texcoord(1, 1);
-            m_mesh.normal(0, 0, 1);
-            m_mesh.vertex( 1,  1, 0);
+            m_triangles.texcoord(1, 1);
+            m_triangles.normal(0, 0, 1);
+            m_triangles.vertex( 1,  1, 0);
         }
-    #endif
+        assert(m_triangles.triangle_count() < m_mesh.triangle_count());
+        
+        m_vao_triangles= m_triangles.create_buffers(/* use_texcoord */ true, /* use_normal */ true, /* use_color */ false, /* use_material_index */ false);
+        
         
         // cree la texture, 1 canal, entiers 32bits non signes
         glGenTextures(1, &m_texture);
@@ -207,14 +193,10 @@ public:
         }
         //~ Transform model= RotationY(global_time() / 60);
         
-        //~ Transform view= m_camera.view();
-        //~ Transform projection= m_camera.projection(window_width(), window_height(), 45);
-        //~ Transform mv= view * model;
-        //~ Transform mvp= projection * mv;
-        Transform view;
-        Transform projection;
-        Transform mv;
-        Transform mvp;
+        Transform view= m_camera.view();
+        Transform projection= m_camera.projection(window_width(), window_height(), 45);
+        Transform mv= view * model;
+        Transform mvp= projection * mv;
         
     // etape 1 : compter le nombre de fragments par pixel
         glUseProgram(m_program);
@@ -234,8 +216,6 @@ public:
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_fragment_buffer);
         glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
         
-        // indiquer quels attributs de sommets du mesh sont necessaires a l'execution du shader.
-        // le shader n'utilise que position. les autres de servent a rien.
         m_mesh.draw(m_program, /* use position */ true, /* use texcoord */ false, /* use normal */ false, /* use color */ false, /* material */ false );
         
         if(key_state(' ') == 0)
@@ -283,9 +263,14 @@ public:
         
         printf("  %.2f overrasterization\n", float(tiles_count*32) / float(fragments_count));
         
-        return 1;
+        //~ return 1;
         
-        glEnable(GL_DEPTH_TEST);                    // activer le ztest
+        // redessine normalement la scene, mesure le temps de rendu
+        
+        //~ glDepthFunc(GL_LEQUAL);
+        
+        //~ glDepthFunc(GL_LESS);
+        //~ glEnable(GL_DEPTH_TEST);                    // activer le ztest
         {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             
@@ -301,21 +286,103 @@ public:
             glEndQuery(GL_TIME_ELAPSED);
         }
         
-        {
+        //~ {
             //~ glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             
+            //~ glUseProgram(m_program_tile);
+            //~ program_uniform(m_program_tile, "mvpMatrix", mvp);
+            
+            //~ glBeginQuery(GL_TIME_ELAPSED, m_tile_query);
+                
+                //~ m_mesh.draw(m_program_tile, /* use position */ true, /* use texcoord */ false, /* use normal */ false, /* use color */ false, /* material */ false );
+            
+            //~ glEndQuery(GL_TIME_ELAPSED);
+        //~ }
+        //~ glDisable(GL_DEPTH_TEST);
+        
+        // test synthetique : dessiner le meme nombre de tiles
+        {
+            float count= float(tiles_count) * 32 / (window_width() * window_height() / 2);
+            
+            int instances= int(std::ceil(count)) / 1024;
+            int n= count - instances * 1024;
+            if(instances == 0 && n == 0) n= 1;
+            
+            printf("%u tiles, %u pixels, %f triangles %d instances + %d\n", tiles_count, tiles_count * 32, count, instances, n); 
+            
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glDepthFunc(GL_LEQUAL);
+            //~ glDepthFunc(GL_LESS);   // optimal sans fragment shader, active aussi le out of order rasterization
+            glEnable(GL_DEPTH_TEST);                    // activer le ztest
+            
+            glBindVertexArray(m_vao_triangles);
             glUseProgram(m_program_tile);
-            program_uniform(m_program_tile, "mvpMatrix", mvp);
+            program_uniform(m_program_tile, "mvpMatrix", Identity());
             
             glBeginQuery(GL_TIME_ELAPSED, m_tile_query);
-                
-                m_mesh.draw(m_program_tile, /* use position */ true, /* use texcoord */ false, /* use normal */ false, /* use color */ false, /* material */ false );
-            
+                if(instances > 0)
+                    glDrawArraysInstanced(GL_TRIANGLES, 0, 1024*3, instances);
+                if(n > 0)
+                    glDrawArrays(GL_TRIANGLES, 0, n*3);
             glEndQuery(GL_TIME_ELAPSED);
+            
+        #if 0
+            // verifie le nombre de tiles dessinees
+            {
+                glUseProgram(m_program);
+                program_uniform(m_program, "mvpMatrix", Identity());
+                
+                GLuint zero= 0;
+                glClearTexImage(m_texture, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
+                
+                glBindImageTexture(0, m_texture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_R32UI);
+                program_uniform(m_program, "image", 0);
+                
+                //
+                glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_tile_buffer);
+                glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
+                
+                glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_fragment_buffer);
+                glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
+                
+                glBeginQuery(GL_TIME_ELAPSED, m_tile_query);
+                    if(instances > 0)
+                        glDrawArraysInstanced(GL_TRIANGLES, 0, 1024*3, instances);
+                    if(n > 0)
+                        glDrawArrays(GL_TRIANGLES, 0, n*3);
+                glEndQuery(GL_TIME_ELAPSED);
+                
+                glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
+                
+                // todo :  faire la reduction dans le shader...
+                std::vector<unsigned> tiles(m_triangles.triangle_count());
+                glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_tile_buffer);
+                glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, tiles.size() * sizeof(unsigned), tiles.data());
+                
+                std::vector<unsigned> fragments(m_triangles.triangle_count());
+                glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_fragment_buffer);
+                glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, fragments.size() * sizeof(unsigned), fragments.data());
+                
+                unsigned tiles_count= 0;
+                for(unsigned i= 0; i < tiles.size(); i++)
+                    if(tiles[i] > 0)
+                        tiles_count+= tiles[i];
+                
+                unsigned fragments_count= 0;
+                unsigned triangles_count= 0;
+                for(unsigned i= 0; i < fragments.size(); i++)
+                    if(fragments[i] > 0)
+                    {
+                        triangles_count++;
+                        fragments_count+= fragments[i];
+                    }
+                
+                printf("[check] %u rasterized triangles\n", triangles_count);
+                printf("[check] %u tiles, %.2f tiles/triangle, %.2f 8x4\n", tiles_count, float(tiles_count)/float(triangles_count), float(tiles_count*32)/float(triangles_count));
+                printf("[check] %u fragments, %.2f fragments/triangle\n", fragments_count, float(fragments_count)/float(triangles_count));
+            }
+        #endif
         }
-        glDisable(GL_DEPTH_TEST);
-        
-        // dessiner le meme nombre de tiles ?
         
         //
         GLint64 gpu_draw= 0;
@@ -338,6 +405,8 @@ protected:
     GLuint m_program_display;
     GLuint m_program_texture;
     GLuint m_program_tile;
+    
+    GLuint m_vao_triangles;
     
     GLuint m_texture;
     GLuint m_grid_texture;
