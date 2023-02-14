@@ -27,7 +27,7 @@ void App::vsync_off( )
 {
     // desactive vsync pour les mesures de temps
     SDL_GL_SetSwapInterval(0);
-    printf("[Apptime] vsync + sync OFF...\n");
+    printf("sync + vsync  OFF...\n");
     
     // desactive aussi la synchro cpu / gpu...
     sync= false;

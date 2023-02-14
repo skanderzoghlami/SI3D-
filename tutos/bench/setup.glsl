@@ -37,9 +37,9 @@ out vec4 fragment_color;
 //~ layout(early_fragment_tests) in;
 void main( )
 {
-    ivec2 tile= ivec2(gl_FragCoord.xy) / 8;
+    ivec2 tile= ivec2(gl_FragCoord.xy) / ivec2(8, 4);
     int tile_id= tile.y * 1024 + tile.x;
-
+	
     int n= 0;
     // tiles par triangle
     while(true)

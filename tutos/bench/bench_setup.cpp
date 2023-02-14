@@ -22,7 +22,10 @@ class StorageImage : public App
 {
 public:
     // application openGL 4.3
-    StorageImage( ) : App(1024, 640,  4, 3) {}
+    StorageImage( ) : App(1024, 640,  4, 3) 
+    {
+        vsync_off();
+    }
     
     int init( )
     {        
@@ -47,14 +50,49 @@ public:
             return -1;
         
         //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/bistro/interior.obj");
-        m_mesh= read_mesh_fast("/home/jciehl/scenes/bistro/exterior.obj");
+        //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/bistro/exterior.obj");
         //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/rungholt/rungholt.obj");
-        //~ m_mesh= read_mesh_fast("data/cube.obj");
+        m_mesh= read_mesh_fast("data/cube.obj");
         //~ m_mesh= read_mesh_fast("data/bigguy.obj");
-        
+    
         Point pmin, pmax;
         m_mesh.bounds(pmin, pmax);
         m_camera.lookat(pmin, pmax);
+        
+    #if 1
+        //~ m_triangles= Mesh(GL_TRIANGLES);
+        //~ for(int i= 0; i < 1024*1024; i++)
+        //~ {
+            //~ m_triangles.texcoord(0, 0);
+            //~ m_triangles.normal(0, 0, 1);
+            //~ m_triangles.vertex(-1, -1, 0);
+            
+            //~ m_triangles.texcoord(1, 0);
+            //~ m_triangles.normal(0, 0, 1);
+            //~ m_triangles.vertex( 1, -1, 0);
+            
+            //~ m_triangles.texcoord(1, 1);
+            //~ m_triangles.normal(0, 0, 1);
+            //~ m_triangles.vertex( 1,  1, 0);
+        //~ }
+        
+        m_mesh= Mesh(GL_TRIANGLES);
+        //~ for(int i= 0; i < 1024*1024; i++)
+        for(int i= 0; i < 1; i++)
+        {
+            m_mesh.texcoord(0, 0);
+            m_mesh.normal(0, 0, 1);
+            m_mesh.vertex(-1, -1, 0);
+            
+            m_mesh.texcoord(1, 0);
+            m_mesh.normal(0, 0, 1);
+            m_mesh.vertex( 1, -1, 0);
+            
+            m_mesh.texcoord(1, 1);
+            m_mesh.normal(0, 0, 1);
+            m_mesh.vertex( 1,  1, 0);
+        }
+    #endif
         
         // cree la texture, 1 canal, entiers 32bits non signes
         glGenTextures(1, &m_texture);
@@ -84,13 +122,16 @@ public:
         
         glClearDepth(1.f);                          // profondeur par defaut
         glDepthFunc(GL_LEQUAL);                       // ztest, conserver l'intersection la plus proche de la m_camera
-        //~ glEnable(GL_DEPTH_TEST);                    // activer le ztest
-        glDisable(GL_DEPTH_TEST);                    // activer le ztest
+        //~ glDepthFunc(GL_LESS);                       // ztest, conserver l'intersection la plus proche de la m_camera
+        glEnable(GL_DEPTH_TEST);                    // activer le ztest
+        //~ glDisable(GL_DEPTH_TEST);                    // activer le ztest
         
         glFrontFace(GL_CCW);
         glCullFace(GL_BACK);
         glEnable(GL_CULL_FACE);
         //~ glDisable(GL_CULL_FACE);
+        
+        glDisable(GL_BLEND);
         
         return 0;   // ras, pas d'erreur
     }
@@ -106,7 +147,6 @@ public:
     
     int update( const float time, const float delta )
     {
-
         return 0;
     }
     
@@ -114,17 +154,13 @@ public:
     int render( )
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        // effacer la texture image / compteur, le shader ajoute 1 a chaque fragment dessine...
-        GLuint zero= 0;
-        glClearTexImage(m_texture, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
         
         // recupere les mouvements de la souris
         int mx, my;
         unsigned int mb= SDL_GetRelativeMouseState(&mx, &my);
         int mousex, mousey;
         SDL_GetMouseState(&mousex, &mousey);
-
+        
         // deplace la m_camera
         if(mb & SDL_BUTTON(1))
             m_camera.rotation(mx, my);      // tourne autour de l'objet
@@ -132,7 +168,7 @@ public:
             m_camera.translation((float) mx / (float) window_width(), (float) my / (float) window_height()); // deplace le point de rotation
         else if(mb & SDL_BUTTON(2))
             m_camera.move(mx);           // approche / eloigne l'objet
-
+        
         SDL_MouseWheelEvent wheel= wheel_event();
         if(wheel.y != 0)
         {
@@ -171,19 +207,27 @@ public:
         }
         //~ Transform model= RotationY(global_time() / 60);
         
-        Transform view= m_camera.view();
-        Transform projection= m_camera.projection(window_width(), window_height(), 45);
-        Transform mv= view * model;
-        Transform mvp= projection * mv;
+        //~ Transform view= m_camera.view();
+        //~ Transform projection= m_camera.projection(window_width(), window_height(), 45);
+        //~ Transform mv= view * model;
+        //~ Transform mvp= projection * mv;
+        Transform view;
+        Transform projection;
+        Transform mv;
+        Transform mvp;
         
     // etape 1 : compter le nombre de fragments par pixel
         glUseProgram(m_program);
         program_uniform(m_program, "mvpMatrix", mvp);
         
-        // selectionne la texture sur l'unite image 0, operations atomiques / lecture + ecriture
+        //
+        GLuint zero= 0;
+        glClearTexImage(m_texture, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
+        
         glBindImageTexture(0, m_texture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_R32UI);
         program_uniform(m_program, "image", 0);
         
+        //
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_tile_buffer);
         glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
         
@@ -198,18 +242,16 @@ public:
         {
             // passe 2 : afficher le compteur
             glUseProgram(m_program_display);
-
+            
             // attendre que les resultats de la passe 1 soit disponible
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
             
-            // RE-selectionne la texture sur l'unite image 0 / LECTURE SEULE
-            //~ glBindImageTexture(0, m_texture, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32UI);
             program_uniform(m_program_display, "image", 0);
             
             glDrawArrays(GL_TRIANGLES, 0, 3);
         }
         
-    // etape 2 : recupere le buffer
+    // etape 2 : recupere les buffers
         glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
         
         std::vector<unsigned> tiles(m_mesh.triangle_count());
@@ -236,11 +278,12 @@ public:
             }
         
         printf("%u rasterized triangles\n", triangles_count);
-        printf("%u tiles, %.2f tiles/triangle, %.2f 8x8\n", tiles_count, float(tiles_count)/float(triangles_count), float(tiles_count*64)/float(triangles_count));
+        printf("%u tiles, %.2f tiles/triangle, %.2f 8x4\n", tiles_count, float(tiles_count)/float(triangles_count), float(tiles_count*32)/float(triangles_count));
         printf("%u fragments, %.2f fragments/triangle\n", fragments_count, float(fragments_count)/float(triangles_count));
         
-        printf("  %.2f overrasterization\n", float(tiles_count*64) / float(fragments_count));
+        printf("  %.2f overrasterization\n", float(tiles_count*32) / float(fragments_count));
         
+        return 1;
         
         glEnable(GL_DEPTH_TEST);                    // activer le ztest
         {
@@ -259,22 +302,20 @@ public:
         }
         
         {
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            //~ glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             
             glUseProgram(m_program_tile);
             program_uniform(m_program_tile, "mvpMatrix", mvp);
             
             glBeginQuery(GL_TIME_ELAPSED, m_tile_query);
                 
-                m_mesh.draw(m_program_tile, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false, /* material */ false );
+                m_mesh.draw(m_program_tile, /* use position */ true, /* use texcoord */ false, /* use normal */ false, /* use color */ false, /* material */ false );
             
             glEndQuery(GL_TIME_ELAPSED);
         }
+        glDisable(GL_DEPTH_TEST);
         
         // dessiner le meme nombre de tiles ?
-        
-        
-        glDisable(GL_DEPTH_TEST);
         
         //
         GLint64 gpu_draw= 0;
@@ -290,6 +331,7 @@ public:
 
 protected:
     Mesh m_mesh;
+    Mesh m_triangles;
     Orbiter m_camera;
 
     GLuint m_program;

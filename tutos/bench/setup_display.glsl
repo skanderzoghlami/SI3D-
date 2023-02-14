@@ -34,7 +34,7 @@ void main( )
         vec3(113,1,14)
     );
     
-    uint n= imageLoad(image, ivec2(gl_FragCoord.xy) / 8).r;
+    uint n= imageLoad(image, ivec2(gl_FragCoord.xy) / ivec2(8, 4)).r;
 
     vec3 color;
     if(n < 10) color= colors[n] / vec3(255);
