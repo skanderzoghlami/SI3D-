@@ -51,7 +51,7 @@ public:
         
         //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/bistro/interior.obj");
         //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/bistro/exterior.obj");
-        m_mesh= read_mesh_fast("/home/jciehl/scenes/rungholt/rungholt.obj");
+        m_mesh= read_mesh_fast("data/rungholt.obj");
         //~ m_mesh= read_mesh_fast("data/cube.obj");
         //~ m_mesh= read_mesh_fast("data/bigguy.obj");
     
@@ -218,19 +218,6 @@ public:
         
         m_mesh.draw(m_program, /* use position */ true, /* use texcoord */ false, /* use normal */ false, /* use color */ false, /* material */ false );
         
-        if(key_state(' ') == 0)
-        {
-            // passe 2 : afficher le compteur
-            glUseProgram(m_program_display);
-            
-            // attendre que les resultats de la passe 1 soit disponible
-            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-            
-            program_uniform(m_program_display, "image", 0);
-            
-            glDrawArrays(GL_TRIANGLES, 0, 3);
-        }
-        
     // etape 2 : recupere les buffers
         glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
         
@@ -263,28 +250,23 @@ public:
         
         printf("  %.2f overrasterization\n", float(tiles_count*32) / float(fragments_count));
         
-        //~ return 1;
-        
-        // redessine normalement la scene, mesure le temps de rendu
-        
-        //~ glDepthFunc(GL_LEQUAL);
-        
-        //~ glDepthFunc(GL_LESS);
-        //~ glEnable(GL_DEPTH_TEST);                    // activer le ztest
+
+        if (key_state(' '))
         {
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            
-            glUseProgram(m_program_texture);
-            program_uniform(m_program_texture, "mvpMatrix", mvp);
-            program_uniform(m_program_texture, "mvMatrix", mv);
-            program_use_texture(m_program_texture, "grid", 0, m_grid_texture);        
-            
-            glBeginQuery(GL_TIME_ELAPSED, m_time_query);
-                
-                m_mesh.draw(m_program_texture, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false, /* material */ false );
-            
-            glEndQuery(GL_TIME_ELAPSED);
+            // passe 2 : afficher le compteur
+            glUseProgram(m_program_display);
+
+            // attendre que les resultats de la passe 1 soit disponible
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+            program_uniform(m_program_display, "image", 0);
+
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+
+            return 1;
         }
+
+        //return 1;
         
         //~ {
             //~ glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -384,6 +366,27 @@ public:
         #endif
         }
         
+        // redessine normalement la scene, mesure le temps de rendu
+
+        //~ glDepthFunc(GL_LEQUAL);
+
+        //~ glDepthFunc(GL_LESS);
+        //~ glEnable(GL_DEPTH_TEST);                    // activer le ztest
+        {
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            glUseProgram(m_program_texture);
+            program_uniform(m_program_texture, "mvpMatrix", mvp);
+            program_uniform(m_program_texture, "mvMatrix", mv);
+            program_use_texture(m_program_texture, "grid", 0, m_grid_texture);
+
+            glBeginQuery(GL_TIME_ELAPSED, m_time_query);
+
+            m_mesh.draw(m_program_texture, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false, /* material */ false);
+
+            glEndQuery(GL_TIME_ELAPSED);
+        }
+
         //
         GLint64 gpu_draw= 0;
         glGetQueryObjecti64v(m_time_query, GL_QUERY_RESULT, &gpu_draw);
