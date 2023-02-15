@@ -58,25 +58,39 @@ struct Bench : public AppCamera
         if(program_errors(m_program_texture) || program_errors(m_program_rasterizer))
             return -1;
         
+        // bench 1 : triangles mal orientes / cull rate
+        m_triangles.create(GL_TRIANGLES);
+        for(int i= 0; i < 1024*1024; i++)
+        {
+            // back face culled
+            m_triangles.texcoord(0, 0);
+            m_triangles.normal(0, 0, 1);
+            m_triangles.vertex(-1, -1, 0);
+            
+            m_triangles.texcoord(1, 1);
+            m_triangles.normal(0, 0, 1);
+            m_triangles.vertex( 1,  1, 0);
+            
+            m_triangles.texcoord(1, 0);
+            m_triangles.normal(0, 0, 1);
+            m_triangles.vertex( 1, -1, 0);
+        }
+        
+        m_vao_triangles= m_triangles.create_buffers(/* use_texcoord */ true, /* use_normal */ true, /* use_color */ false, /* use_material_index */ false);
+        
+        //
         glGenQueries(1, &m_time_query);
-        glBeginQuery(GL_TIME_ELAPSED, m_time_query);
-        glEndQuery(GL_TIME_ELAPSED);
-        
         glGenQueries(1, &m_bench1_query);
-        glBeginQuery(GL_TIME_ELAPSED, m_bench1_query);
-        glEndQuery(GL_TIME_ELAPSED);
-        
         glGenQueries(1, &m_bench2_query);
-        glBeginQuery(GL_TIME_ELAPSED, m_bench2_query);
-        glEndQuery(GL_TIME_ELAPSED);
-        
         glGenQueries(1, &m_bench3_query);
-        glBeginQuery(GL_TIME_ELAPSED, m_bench3_query);
-        glEndQuery(GL_TIME_ELAPSED);
-        
         glGenQueries(1, &m_bench4_query);
-        glBeginQuery(GL_TIME_ELAPSED, m_bench4_query);
-        glEndQuery(GL_TIME_ELAPSED);
+        
+        // initialise les requetes... simplifie la collecte sur la 1ere frame...
+        glBeginQuery(GL_TIME_ELAPSED, m_time_query); glEndQuery(GL_TIME_ELAPSED);
+        glBeginQuery(GL_TIME_ELAPSED, m_bench1_query); glEndQuery(GL_TIME_ELAPSED);
+        glBeginQuery(GL_TIME_ELAPSED, m_bench2_query); glEndQuery(GL_TIME_ELAPSED);
+        glBeginQuery(GL_TIME_ELAPSED, m_bench3_query); glEndQuery(GL_TIME_ELAPSED);
+        glBeginQuery(GL_TIME_ELAPSED, m_bench4_query); glEndQuery(GL_TIME_ELAPSED);
         
         // etat openGL par defaut
         glClearColor(0.2f, 0.2f, 0.2f, 1.f);
@@ -117,13 +131,14 @@ struct Bench : public AppCamera
         glDeleteQueries(1, &m_bench1_query);
         glDeleteQueries(1, &m_bench2_query);
         glDeleteQueries(1, &m_bench3_query);
-        //~ glDeleteQueries(1, &m_bench4_query);
+        glDeleteQueries(1, &m_bench4_query);
         
         return 0;
     }
     
     int render( )
     {
+        // collecte les requetes de la frame precedente...
         GLint64 gpu_draw= 0;
         glGetQueryObjecti64v(m_time_query, GL_QUERY_RESULT, &gpu_draw);
         
@@ -149,13 +164,32 @@ struct Bench : public AppCamera
             float(gpu_bench3_draw) / 1000,
             float(gpu_bench4_draw) / 1000 });
         
+        //
         Transform model= RotationY(global_time() / 60);
         Transform view= camera().view();
         Transform projection= camera().projection(window_width(), window_height(), 45);
         Transform mv= view * model;
         Transform mvp= projection * mv;
 
+    #if 0
+        // en deriner, pour avoir qqchose de dessine...
+        // test 1 : normal
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glUseProgram(m_program_texture);
+        program_uniform(m_program_texture, "mvpMatrix", mvp);
+        program_uniform(m_program_texture, "mvMatrix", mv);
+        program_use_texture(m_program_texture, "grid", 0, m_grid_texture);
+        
+        glBeginQuery(GL_TIME_ELAPSED, m_time_query);
+            
+            m_mesh.draw(m_program_texture, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false, /* material */ false );
+        
+        glEndQuery(GL_TIME_ELAPSED);
+    #endif
+    
         // bench 1 : que les triangles
+    #if 0
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_RASTERIZER_DISCARD);
         
@@ -171,7 +205,31 @@ struct Bench : public AppCamera
         glEndQuery(GL_TIME_ELAPSED);
         
         glDisable(GL_RASTERIZER_DISCARD);
+        // pas efficace sur les geforces, temps equivalent au draw normal...
+    #else
+    
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
+        glBindVertexArray(m_vao_triangles);
+        glUseProgram(m_program_texture);
+        program_uniform(m_program_texture, "mvpMatrix", Identity());
+        program_uniform(m_program_texture, "mvMatrix", Identity());
+        program_use_texture(m_program_texture, "grid", 0, m_grid_texture);
+        
+        {
+            int instances= m_mesh.triangle_count() / m_triangles.triangle_count();
+            int n= m_mesh.triangle_count() % m_triangles.triangle_count();
+            if(instances == 0 && n == 0) n= 1;
+            
+            glBeginQuery(GL_TIME_ELAPSED, m_bench1_query);
+                if(instances > 0)
+                    glDrawArraysInstanced(GL_TRIANGLES, 0, m_triangles.triangle_count()*3, instances);
+                if(n > 0)
+                    glDrawArrays(GL_TRIANGLES, 0, n*3);
+            glEndQuery(GL_TIME_ELAPSED);
+        }
+    #endif
+    
         // bench 2 : que le rasterizer, pas les fragments
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glDepthFunc(GL_LESS);
@@ -210,9 +268,12 @@ protected:
     std::vector<stats> m_stats;
 
     Mesh m_mesh;
+    Mesh m_triangles;
     GLuint m_program_texture;
     GLuint m_program_rasterizer;
     GLuint m_grid_texture;
+
+    GLuint m_vao_triangles;
 
     GLuint m_time_query;
     GLuint m_bench1_query;
