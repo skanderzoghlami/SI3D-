@@ -40,8 +40,10 @@ struct Bench : public AppCamera
     int init( )
     {
         //~ m_mesh= read_mesh_fast("data/robot.obj");
-        //~ m_mesh= read_indexed_mesh_fast("/home/jciehl/scenes/sponza-intel/export.obj");
-        m_mesh= read_mesh_fast("/home/jciehl/scenes/sponza-intel/export.obj");
+        //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/bistro/exterior.obj");
+        m_mesh= read_mesh_fast("/home/jciehl/scenes/quixel.obj");
+        //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/sponza-intel/export.obj");
+        //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/rungholt/rungholt.obj");
         
         Point pmin, pmax;
         m_mesh.bounds(pmin, pmax);
@@ -97,11 +99,14 @@ struct Bench : public AppCamera
         
         glClearDepth(1.f);
         glDepthFunc(GL_LEQUAL);
+        //~ glDepthFunc(GL_LESS);
         glEnable(GL_DEPTH_TEST);
         
         glFrontFace(GL_CCW);
         glCullFace(GL_BACK);
         glEnable(GL_CULL_FACE);
+        
+        glDisable(GL_BLEND);
         
         return 0;
     }
@@ -157,6 +162,14 @@ struct Bench : public AppCamera
             float(gpu_bench1_draw) / 1000,
             float(gpu_bench2_draw) / 1000);
         
+        float triangle_rate= float(m_mesh.triangle_count()) / float(gpu_draw) * 1000;
+        
+        float vertex_size= float(m_mesh.triangle_count() * 3 * 32) / float(1024 * 1024);
+        //~ float vertex_rate= vertex_size / float(gpu_draw) * 1000000000;
+        float vertex_rate= vertex_size / float(gpu_bench1_draw) * 1000000000;
+        printf("triangle rate %.2fMt/s\n", triangle_rate);
+        printf("vertex bw %.2fMB/s\n", vertex_rate);
+        
         m_stats.push_back({
             float(gpu_draw) / 1000, 
             float(gpu_bench1_draw) / 1000,
@@ -171,26 +184,30 @@ struct Bench : public AppCamera
         Transform mv= view * model;
         Transform mvp= projection * mv;
 
-    #if 0
+    #if 1
         // en deriner, pour avoir qqchose de dessine...
         // test 1 : normal
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //~ glDepthFunc(GL_LESS);
+        //~ glEnable(GL_DEPTH_TEST);
 
         glUseProgram(m_program_texture);
         program_uniform(m_program_texture, "mvpMatrix", mvp);
         program_uniform(m_program_texture, "mvMatrix", mv);
         program_use_texture(m_program_texture, "grid", 0, m_grid_texture);
         
-        glBeginQuery(GL_TIME_ELAPSED, m_time_query);
+        //~ glBeginQuery(GL_TIME_ELAPSED, m_time_query);
             
             m_mesh.draw(m_program_texture, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false, /* material */ false );
         
-        glEndQuery(GL_TIME_ELAPSED);
+        //~ glEndQuery(GL_TIME_ELAPSED);
     #endif
     
         // bench 1 : que les triangles
     #if 0
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //~ glDepthFunc(GL_LESS);
+        //~ glEnable(GL_DEPTH_TEST);
         glEnable(GL_RASTERIZER_DISCARD);
         
         glUseProgram(m_program_texture);
@@ -209,6 +226,9 @@ struct Bench : public AppCamera
     #else
     
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //~ glDepthFunc(GL_LESS);
+        //~ glEnable(GL_DEPTH_TEST);
+        //~ glEnable(GL_RASTERIZER_DISCARD);
         
         glBindVertexArray(m_vao_triangles);
         glUseProgram(m_program_texture);
@@ -228,12 +248,12 @@ struct Bench : public AppCamera
                     glDrawArrays(GL_TRIANGLES, 0, n*3);
             glEndQuery(GL_TIME_ELAPSED);
         }
+        //~ glDisable(GL_RASTERIZER_DISCARD);
     #endif
     
         // bench 2 : que le rasterizer, pas les fragments
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glDepthFunc(GL_LESS);
-        glEnable(GL_DEPTH_TEST);
         
         glUseProgram(m_program_rasterizer);
         program_uniform(m_program_rasterizer, "mvpMatrix", mvp);
@@ -243,13 +263,14 @@ struct Bench : public AppCamera
             m_mesh.draw(m_program_rasterizer, /* use position */ true, /* use texcoord */ false, /* use normal */ false, /* use color */ false, /* material */ false );
         
         glEndQuery(GL_TIME_ELAPSED);
+        glDepthFunc(GL_LEQUAL);
         
         // bench 3 : que les fragments visibles ??
         
         
         // test 1 : normal
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+        
         glUseProgram(m_program_texture);
         program_uniform(m_program_texture, "mvpMatrix", mvp);
         program_uniform(m_program_texture, "mvMatrix", mv);
