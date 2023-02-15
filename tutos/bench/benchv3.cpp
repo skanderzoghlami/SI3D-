@@ -41,9 +41,10 @@ struct Bench : public AppCamera
     {
         //~ m_mesh= read_mesh_fast("data/robot.obj");
         //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/bistro/exterior.obj");
-        m_mesh= read_mesh_fast("/home/jciehl/scenes/quixel.obj");
-        //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/sponza-intel/export.obj");
-        //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/rungholt/rungholt.obj");
+        //~ m_mesh= read_mesh_fast("/home/jciehl/scenes/quixel/quixel.obj");
+        m_mesh= read_indexed_mesh_fast("/home/jciehl/scenes/sponza-intel/export.obj");
+        //~ m_mesh= read_indexed_mesh_fast("/home/jciehl/scenes/rungholt/rungholt.obj");
+        //~ m_mesh= read_indexed_mesh_fast("/home/jciehl/scenes/san-miguel/san-miguel.obj");
         
         Point pmin, pmax;
         m_mesh.bounds(pmin, pmax);
@@ -82,6 +83,7 @@ struct Bench : public AppCamera
         
         //
         glGenQueries(1, &m_time_query);
+        glGenQueries(1, &m_vertex_query);
         glGenQueries(1, &m_bench1_query);
         glGenQueries(1, &m_bench2_query);
         glGenQueries(1, &m_bench3_query);
@@ -89,6 +91,7 @@ struct Bench : public AppCamera
         
         // initialise les requetes... simplifie la collecte sur la 1ere frame...
         glBeginQuery(GL_TIME_ELAPSED, m_time_query); glEndQuery(GL_TIME_ELAPSED);
+        glBeginQuery(GL_VERTEX_SHADER_INVOCATIONS_ARB, m_vertex_query); glEndQuery(GL_VERTEX_SHADER_INVOCATIONS_ARB);
         glBeginQuery(GL_TIME_ELAPSED, m_bench1_query); glEndQuery(GL_TIME_ELAPSED);
         glBeginQuery(GL_TIME_ELAPSED, m_bench2_query); glEndQuery(GL_TIME_ELAPSED);
         glBeginQuery(GL_TIME_ELAPSED, m_bench3_query); glEndQuery(GL_TIME_ELAPSED);
@@ -133,6 +136,7 @@ struct Bench : public AppCamera
         glDeleteTextures(1, &m_grid_texture);
         
         glDeleteQueries(1, &m_time_query);
+        glDeleteQueries(1, &m_vertex_query);
         glDeleteQueries(1, &m_bench1_query);
         glDeleteQueries(1, &m_bench2_query);
         glDeleteQueries(1, &m_bench3_query);
@@ -146,6 +150,8 @@ struct Bench : public AppCamera
         // collecte les requetes de la frame precedente...
         GLint64 gpu_draw= 0;
         glGetQueryObjecti64v(m_time_query, GL_QUERY_RESULT, &gpu_draw);
+        GLint64 gpu_vertex= 0;
+        glGetQueryObjecti64v(m_vertex_query, GL_QUERY_RESULT, &gpu_vertex);
         
         GLint64 gpu_bench1_draw= 0;
         glGetQueryObjecti64v(m_bench1_query, GL_QUERY_RESULT, &gpu_bench1_draw);
@@ -164,8 +170,8 @@ struct Bench : public AppCamera
         
         float triangle_rate= float(m_mesh.triangle_count()) / float(gpu_draw) * 1000;
         
-        float vertex_size= float(m_mesh.triangle_count() * 3 * 32) / float(1024 * 1024);
-        //~ float vertex_rate= vertex_size / float(gpu_draw) * 1000000000;
+        //~ float vertex_size= float(m_mesh.triangle_count() * 3 * 32) / float(1024 * 1024);
+        float vertex_size= float(gpu_vertex * 32) / float(1024 * 1024);
         float vertex_rate= vertex_size / float(gpu_bench1_draw) * 1000000000;
         printf("triangle rate %.2fMt/s\n", triangle_rate);
         printf("vertex bw %.2fMB/s\n", vertex_rate);
@@ -185,7 +191,6 @@ struct Bench : public AppCamera
         Transform mvp= projection * mv;
 
     #if 1
-        // en deriner, pour avoir qqchose de dessine...
         // test 1 : normal
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         //~ glDepthFunc(GL_LESS);
@@ -197,14 +202,16 @@ struct Bench : public AppCamera
         program_use_texture(m_program_texture, "grid", 0, m_grid_texture);
         
         //~ glBeginQuery(GL_TIME_ELAPSED, m_time_query);
+        glBeginQuery(GL_VERTEX_SHADER_INVOCATIONS_ARB, m_vertex_query);
             
             m_mesh.draw(m_program_texture, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false, /* material */ false );
         
         //~ glEndQuery(GL_TIME_ELAPSED);
+        glEndQuery(GL_VERTEX_SHADER_INVOCATIONS_ARB);
     #endif
     
         // bench 1 : que les triangles
-    #if 0
+    #if 1
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         //~ glDepthFunc(GL_LESS);
         //~ glEnable(GL_DEPTH_TEST);
@@ -297,6 +304,7 @@ protected:
     GLuint m_vao_triangles;
 
     GLuint m_time_query;
+    GLuint m_vertex_query;
     GLuint m_bench1_query;
     GLuint m_bench2_query;
     GLuint m_bench3_query;
