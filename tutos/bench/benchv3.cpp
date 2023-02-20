@@ -29,6 +29,7 @@ struct stats
     float bench4_time;
 };
 
+const int MAX_FRAMES= 3;
 
 struct Bench : public AppCamera
 {
@@ -110,23 +111,27 @@ struct Bench : public AppCamera
         m_vao_triangles= m_triangles.create_buffers(/* use_texcoord */ true, /* use_normal */ true, /* use_color */ false, /* use_material_index */ false);
         
         //
-        glGenQueries(1, &m_time_query);
-        glGenQueries(1, &m_vertex_query);
-        glGenQueries(1, &m_fragment_query);
-        glGenQueries(1, &m_bench1_query);
-        glGenQueries(1, &m_bench2_query);
-        glGenQueries(1, &m_bench3_query);
-        glGenQueries(1, &m_bench4_query);
+        m_frame= 0;
+        glGenQueries(MAX_FRAMES, m_time_query);
+        glGenQueries(MAX_FRAMES, m_vertex_query);
+        glGenQueries(MAX_FRAMES, m_fragment_query);
+        glGenQueries(MAX_FRAMES, m_bench1_query);
+        glGenQueries(MAX_FRAMES, m_bench2_query);
+        glGenQueries(MAX_FRAMES, m_bench3_query);
+        glGenQueries(MAX_FRAMES, m_bench4_query);
         
         // initialise les requetes... simplifie la collecte sur la 1ere frame...
-        glBeginQuery(GL_TIME_ELAPSED, m_time_query); glEndQuery(GL_TIME_ELAPSED);
-        glBeginQuery(GL_VERTEX_SHADER_INVOCATIONS_ARB, m_vertex_query); glEndQuery(GL_VERTEX_SHADER_INVOCATIONS_ARB);
-        //~ glBeginQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB, m_fragment_query); glEndQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB);
-        glBeginQuery(GL_SAMPLES_PASSED, m_fragment_query); glEndQuery(GL_SAMPLES_PASSED);
-        glBeginQuery(GL_TIME_ELAPSED, m_bench1_query); glEndQuery(GL_TIME_ELAPSED);
-        glBeginQuery(GL_TIME_ELAPSED, m_bench2_query); glEndQuery(GL_TIME_ELAPSED);
-        glBeginQuery(GL_TIME_ELAPSED, m_bench3_query); glEndQuery(GL_TIME_ELAPSED);
-        glBeginQuery(GL_TIME_ELAPSED, m_bench4_query); glEndQuery(GL_TIME_ELAPSED);
+        for(int i= 0; i < MAX_FRAMES; i++)
+        {
+            glBeginQuery(GL_TIME_ELAPSED, m_time_query[i]); glEndQuery(GL_TIME_ELAPSED);
+            glBeginQuery(GL_VERTEX_SHADER_INVOCATIONS_ARB, m_vertex_query[i]); glEndQuery(GL_VERTEX_SHADER_INVOCATIONS_ARB);
+            //~ glBeginQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB, m_fragment_query[i]); glEndQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB);
+            glBeginQuery(GL_SAMPLES_PASSED, m_fragment_query[i]); glEndQuery(GL_SAMPLES_PASSED);
+            glBeginQuery(GL_TIME_ELAPSED, m_bench1_query[i]); glEndQuery(GL_TIME_ELAPSED);
+            glBeginQuery(GL_TIME_ELAPSED, m_bench2_query[i]); glEndQuery(GL_TIME_ELAPSED);
+            glBeginQuery(GL_TIME_ELAPSED, m_bench3_query[i]); glEndQuery(GL_TIME_ELAPSED);
+            glBeginQuery(GL_TIME_ELAPSED, m_bench4_query[i]); glEndQuery(GL_TIME_ELAPSED);
+        }
         
         // etat openGL par defaut
         glClearColor(0.2f, 0.2f, 0.2f, 1.f);
@@ -154,11 +159,11 @@ struct Bench : public AppCamera
             for(auto& stats : m_stats)
             {
                 fprintf(out, "%f %f %f %f %f\n", 
-                    stats.draw_time,     // 1
-                    stats.bench1_time,  // 2
-                    stats.bench2_time,  // 3
-                    stats.bench3_time,  // 4
-                    stats.bench4_time); // 5
+                    stats.draw_time,     // 1 time
+                    stats.bench1_time,  // 2 discard
+                    stats.bench2_time,  // 3 rasterizer
+                    stats.bench3_time,  // 4 cull
+                    stats.bench4_time); // 5 fragments
             }
             
             fclose(out);
@@ -170,13 +175,13 @@ struct Bench : public AppCamera
 
         glDeleteTextures(1, &m_grid_texture);
         
-        glDeleteQueries(1, &m_time_query);
-        glDeleteQueries(1, &m_vertex_query);
-        glDeleteQueries(1, &m_fragment_query);
-        glDeleteQueries(1, &m_bench1_query);
-        glDeleteQueries(1, &m_bench2_query);
-        glDeleteQueries(1, &m_bench3_query);
-        glDeleteQueries(1, &m_bench4_query);
+        glDeleteQueries(MAX_FRAMES, m_time_query);
+        glDeleteQueries(MAX_FRAMES, m_vertex_query);
+        glDeleteQueries(MAX_FRAMES, m_fragment_query);
+        glDeleteQueries(MAX_FRAMES, m_bench1_query);
+        glDeleteQueries(MAX_FRAMES, m_bench2_query);
+        glDeleteQueries(MAX_FRAMES, m_bench3_query);
+        glDeleteQueries(MAX_FRAMES, m_bench4_query);
         
         return 0;
     }
@@ -184,21 +189,34 @@ struct Bench : public AppCamera
     int render( )
     {
         // collecte les requetes de la frame precedente...
+        {
+            GLuint ready= GL_FALSE;
+            glGetQueryObjectuiv(m_time_query[m_frame], GL_QUERY_RESULT_AVAILABLE, &ready);
+            if(ready != GL_TRUE)
+                printf("[oops] wait query, frame %d...\n", m_frame);
+        }
+        
+        auto wait_start= std::chrono::high_resolution_clock::now();
         GLint64 gpu_draw= 0;
-        glGetQueryObjecti64v(m_time_query, GL_QUERY_RESULT, &gpu_draw);
+        glGetQueryObjecti64v(m_time_query[m_frame], GL_QUERY_RESULT, &gpu_draw);
+        auto wait_stop= std::chrono::high_resolution_clock::now();
+        float wait= float(std::chrono::duration_cast<std::chrono::microseconds>(wait_stop - wait_start).count()) / 1000;
+        if(wait > float(0.1))
+            printf("[oops] wait query %.2fms\n", wait);
+        
         GLint64 gpu_vertex= 0;
-        glGetQueryObjecti64v(m_vertex_query, GL_QUERY_RESULT, &gpu_vertex);
+        glGetQueryObjecti64v(m_vertex_query[m_frame], GL_QUERY_RESULT, &gpu_vertex);
         GLint64 gpu_fragment= 0;
-        glGetQueryObjecti64v(m_fragment_query, GL_QUERY_RESULT, &gpu_fragment);
+        glGetQueryObjecti64v(m_fragment_query[m_frame], GL_QUERY_RESULT, &gpu_fragment);
         
         GLint64 gpu_bench1_draw= 0;
-        glGetQueryObjecti64v(m_bench1_query, GL_QUERY_RESULT, &gpu_bench1_draw);
+        glGetQueryObjecti64v(m_bench1_query[m_frame], GL_QUERY_RESULT, &gpu_bench1_draw);
         GLint64 gpu_bench2_draw= 0;
-        glGetQueryObjecti64v(m_bench2_query, GL_QUERY_RESULT, &gpu_bench2_draw);
+        glGetQueryObjecti64v(m_bench2_query[m_frame], GL_QUERY_RESULT, &gpu_bench2_draw);
         GLint64 gpu_bench3_draw= 0;
-        glGetQueryObjecti64v(m_bench3_query, GL_QUERY_RESULT, &gpu_bench3_draw);
+        glGetQueryObjecti64v(m_bench3_query[m_frame], GL_QUERY_RESULT, &gpu_bench3_draw);
         GLint64 gpu_bench4_draw= 0;
-        glGetQueryObjecti64v(m_bench4_query, GL_QUERY_RESULT, &gpu_bench4_draw);
+        glGetQueryObjecti64v(m_bench4_query[m_frame], GL_QUERY_RESULT, &gpu_bench4_draw);
         
         printf("  %.2fus draw time = %.2fus vertex (%.2fus culled) + %2.fus rasterizer\n", 
             float(gpu_draw) / 1000,
@@ -250,9 +268,9 @@ struct Bench : public AppCamera
         program_use_texture(m_program_texture, "grid", 0, m_grid_texture);
         
         //~ glBeginQuery(GL_TIME_ELAPSED, m_time_query);
-        glBeginQuery(GL_VERTEX_SHADER_INVOCATIONS_ARB, m_vertex_query);
-        glBeginQuery(GL_SAMPLES_PASSED, m_fragment_query);
-        //~ glBeginQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB, m_fragment_query);
+        glBeginQuery(GL_VERTEX_SHADER_INVOCATIONS_ARB, m_vertex_query[m_frame]);
+        glBeginQuery(GL_SAMPLES_PASSED, m_fragment_query[m_frame]);
+        //~ glBeginQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB, m_fragment_query[frame]);
             
             m_mesh.draw(m_program_texture, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false, /* material */ false );
         
@@ -272,7 +290,7 @@ struct Bench : public AppCamera
         program_uniform(m_program_texture, "mvMatrix", mv);
         program_use_texture(m_program_texture, "grid", 0, m_grid_texture);
         
-        glBeginQuery(GL_TIME_ELAPSED, m_bench1_query);
+        glBeginQuery(GL_TIME_ELAPSED, m_bench1_query[m_frame]);
             
             m_mesh.draw(m_program_texture, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false, /* material */ false );
         
@@ -303,7 +321,7 @@ struct Bench : public AppCamera
             int n= m_mesh.triangle_count() % m_triangles.triangle_count();
             if(instances == 0 && n == 0) n= 1;
             
-            glBeginQuery(GL_TIME_ELAPSED, m_bench3_query);
+            glBeginQuery(GL_TIME_ELAPSED, m_bench3_query[m_frame]);
             #if 1
                 // triangles non indexes
                 if(instances > 0)
@@ -335,7 +353,7 @@ struct Bench : public AppCamera
         //~ program_uniform(m_program_cull, "mvMatrix", mv);
         //~ program_use_texture(m_program_cull, "grid", 0, m_grid_texture);
         
-        glBeginQuery(GL_TIME_ELAPSED, m_bench3_query);
+        glBeginQuery(GL_TIME_ELAPSED, m_bench3_query[m_frame]);
             
             //~ m_mesh.draw(m_program_cull, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false, /* material */ false );
             m_mesh.draw(m_program_cull, /* use position */ true, /* use texcoord */ false, /* use normal */ false, /* use color */ false, /* material */ false );
@@ -350,7 +368,7 @@ struct Bench : public AppCamera
         glUseProgram(m_program_rasterizer);
         program_uniform(m_program_rasterizer, "mvpMatrix", mvp);
         
-        glBeginQuery(GL_TIME_ELAPSED, m_bench2_query);
+        glBeginQuery(GL_TIME_ELAPSED, m_bench2_query[m_frame]);
             
             m_mesh.draw(m_program_rasterizer, /* use position */ true, /* use texcoord */ false, /* use normal */ false, /* use color */ false, /* material */ false );
         
@@ -364,11 +382,14 @@ struct Bench : public AppCamera
         program_uniform(m_program_texture, "mvMatrix", mv);
         program_use_texture(m_program_texture, "grid", 0, m_grid_texture);
         
-        glBeginQuery(GL_TIME_ELAPSED, m_time_query);
+        glBeginQuery(GL_TIME_ELAPSED, m_time_query[m_frame]);
             
             m_mesh.draw(m_program_texture, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false, /* material */ false );
         
         glEndQuery(GL_TIME_ELAPSED);
+        
+        // recycle les requetes...
+        m_frame= (m_frame + 1) % MAX_FRAMES;
         
         return 1;   // on continue
     }
@@ -385,13 +406,14 @@ protected:
 
     GLuint m_vao_triangles;
 
-    GLuint m_time_query;
-    GLuint m_vertex_query;
-    GLuint m_fragment_query;
-    GLuint m_bench1_query;
-    GLuint m_bench2_query;
-    GLuint m_bench3_query;
-    GLuint m_bench4_query;
+    int m_frame;
+    GLuint m_time_query[MAX_FRAMES];
+    GLuint m_vertex_query[MAX_FRAMES];
+    GLuint m_fragment_query[MAX_FRAMES];
+    GLuint m_bench1_query[MAX_FRAMES];
+    GLuint m_bench2_query[MAX_FRAMES];
+    GLuint m_bench3_query[MAX_FRAMES];
+    GLuint m_bench4_query[MAX_FRAMES];
 };
 
 int main( int argc, char **argv )
