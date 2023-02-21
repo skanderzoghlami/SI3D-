@@ -40,6 +40,7 @@ struct Bench : public AppCamera
     
     int init( )
     {
+    #if 0
         //~ m_mesh= read_mesh_fast("data/robot.obj");
         //~ m_mesh= read_indexed_mesh_fast("/home/jciehl/scenes/bistro/exterior.obj");
         //~ m_mesh= read_indexed_mesh_fast("/home/jciehl/scenes/bistro/exterior.obj");
@@ -53,6 +54,35 @@ struct Bench : public AppCamera
         Point pmin, pmax;
         m_mesh.bounds(pmin, pmax);
         camera().lookat(pmin, pmax);
+    #else
+        m_mesh.create(GL_TRIANGLES);
+        {
+            const int n= 32;
+            for(int nz= 0; nz < 32; nz++)
+            {
+                float z= float(nz) / float(n);
+                
+                for(int ny= 0; ny < n; ny++)
+                for(int nx= 0; nx < n; nx++)
+                {
+                    float x= float(nx) / float(n) * 2 -1;
+                    float y= float(ny) / float(n) * 2 -1;
+                    float x1= float(nx+1) / float(n) * 2 -1;
+                    float y1= float(ny+1) / float(n) * 2 -1;
+                    
+                    m_mesh.normal(0, 0, 1);
+                    
+                    m_mesh.texcoord(0, 0).vertex( x,  y, z);
+                    m_mesh.texcoord(1, 0).vertex(x1,  y, z);
+                    m_mesh.texcoord(1, 1).vertex(x1, y1, z);
+                    
+                    m_mesh.texcoord(0, 0).vertex(x1, y1, z);
+                    m_mesh.texcoord(1, 0).vertex( x, y1, z);
+                    m_mesh.texcoord(1, 1).vertex( x,  y, z);
+                }
+            }
+        }
+    #endif
         
         m_grid_texture= read_texture(0, "data/grid.png");
         
@@ -68,8 +98,9 @@ struct Bench : public AppCamera
         if(program_errors(m_program_texture) || program_errors(m_program_cull) || program_errors(m_program_rasterizer))
             return -1;
         
+#if 0 // plus la peine
         // bench 1 : triangles mal orientes / cull rate
-    #if 1
+    #if 0
         // triangles non indexes...
         m_triangles.create(GL_TRIANGLES);
         for(int i= 0; i < 1024*1024; i++)
@@ -109,7 +140,8 @@ struct Bench : public AppCamera
     #endif
     
         m_vao_triangles= m_triangles.create_buffers(/* use_texcoord */ true, /* use_normal */ true, /* use_color */ false, /* use_material_index */ false);
-        
+#endif
+
         //
         m_frame= 0;
         glGenQueries(MAX_FRAMES, m_time_query);
@@ -252,9 +284,12 @@ struct Bench : public AppCamera
             float(gpu_fragment) / 1000 });
         
         //
-        Transform model= RotationY(global_time() / 60);
-        Transform view= camera().view();
-        Transform projection= camera().projection(window_width(), window_height(), 45);
+        //~ Transform model= RotationY(global_time() / 120);
+        Transform model= RotationZ(global_time() / 120);
+        //~ Transform view= camera().view();
+        //~ Transform projection= camera().projection(window_width(), window_height(), 45);
+        Transform view= Identity();
+        Transform projection= Identity();
         Transform mv= view * model;
         Transform mvp= projection * mv;
 
@@ -398,13 +433,13 @@ protected:
     std::vector<stats> m_stats;
 
     Mesh m_mesh;
-    Mesh m_triangles;
+    //~ Mesh m_triangles;
     GLuint m_program_cull;
     GLuint m_program_texture;
     GLuint m_program_rasterizer;
     GLuint m_grid_texture;
 
-    GLuint m_vao_triangles;
+    //~ GLuint m_vao_triangles;
 
     int m_frame;
     GLuint m_time_query[MAX_FRAMES];
