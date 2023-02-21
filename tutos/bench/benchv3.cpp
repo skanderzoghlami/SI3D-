@@ -33,7 +33,7 @@ const int MAX_FRAMES= 3;
 
 struct Bench : public AppCamera
 {
-    Bench( ) : AppCamera(1024, 512, 4, 3)
+    Bench( ) : AppCamera(1024, 1024, 4, 3)
     {
         vsync_off();
     }
@@ -65,10 +65,10 @@ struct Bench : public AppCamera
                 for(int ny= 0; ny < n; ny++)
                 for(int nx= 0; nx < n; nx++)
                 {
-                    float x= float(nx) / float(n) * 2 -1;
-                    float y= float(ny) / float(n) * 2 -1;
-                    float x1= float(nx+1) / float(n) * 2 -1;
-                    float y1= float(ny+1) / float(n) * 2 -1;
+                    float x= float(nx) / float(n) * std::sqrt(2) - std::sqrt(2)/2;
+                    float y= float(ny) / float(n) * std::sqrt(2) - std::sqrt(2)/2;
+                    float x1= float(nx+1) / float(n) * std::sqrt(2) - std::sqrt(2)/2;
+                    float y1= float(ny+1) / float(n) * std::sqrt(2) - std::sqrt(2)/2;
                     
                     m_mesh.normal(0, 0, 1);
                     
