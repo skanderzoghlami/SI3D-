@@ -57,18 +57,22 @@ struct Bench : public AppCamera
     #else
         m_mesh.create(GL_TRIANGLES);
         {
-            const int n= 32;
-            for(int nz= 0; nz < 32; nz++)
+            const int size= 32;
+            const int slices= 32;
+            
+            for(int nz= 0; nz < slices; nz++)
             {
-                float z= float(nz) / float(n);
+                float z= float(nz) / float(slices);
+                //~ float z= 1 - float(nz) / float(slices);
+                //~ float z= 0;
                 
-                for(int ny= 0; ny < n; ny++)
-                for(int nx= 0; nx < n; nx++)
+                for(int ny= 0; ny < size; ny++)
+                for(int nx= 0; nx < size; nx++)
                 {
-                    float x= float(nx) / float(n) * std::sqrt(2) - std::sqrt(2)/2;
-                    float y= float(ny) / float(n) * std::sqrt(2) - std::sqrt(2)/2;
-                    float x1= float(nx+1) / float(n) * std::sqrt(2) - std::sqrt(2)/2;
-                    float y1= float(ny+1) / float(n) * std::sqrt(2) - std::sqrt(2)/2;
+                    float x= float(nx) / float(size) * std::sqrt(2) - std::sqrt(2)/2;
+                    float y= float(ny) / float(size) * std::sqrt(2) - std::sqrt(2)/2;
+                    float x1= float(nx+1) / float(size) * std::sqrt(2) - std::sqrt(2)/2;
+                    float y1= float(ny+1) / float(size) * std::sqrt(2) - std::sqrt(2)/2;
                     
                     m_mesh.normal(0, 0, 1);
                     
@@ -157,8 +161,8 @@ struct Bench : public AppCamera
         {
             glBeginQuery(GL_TIME_ELAPSED, m_time_query[i]); glEndQuery(GL_TIME_ELAPSED);
             glBeginQuery(GL_VERTEX_SHADER_INVOCATIONS_ARB, m_vertex_query[i]); glEndQuery(GL_VERTEX_SHADER_INVOCATIONS_ARB);
-            //~ glBeginQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB, m_fragment_query[i]); glEndQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB);
-            glBeginQuery(GL_SAMPLES_PASSED, m_fragment_query[i]); glEndQuery(GL_SAMPLES_PASSED);
+            glBeginQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB, m_fragment_query[i]); glEndQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB);
+            //~ glBeginQuery(GL_SAMPLES_PASSED, m_fragment_query[i]); glEndQuery(GL_SAMPLES_PASSED);
             glBeginQuery(GL_TIME_ELAPSED, m_bench1_query[i]); glEndQuery(GL_TIME_ELAPSED);
             glBeginQuery(GL_TIME_ELAPSED, m_bench2_query[i]); glEndQuery(GL_TIME_ELAPSED);
             glBeginQuery(GL_TIME_ELAPSED, m_bench3_query[i]); glEndQuery(GL_TIME_ELAPSED);
@@ -266,8 +270,11 @@ struct Bench : public AppCamera
         printf("vertex rate discard %.2fMv/s cull %.2fMv/s\n", vertex_rate_discard, vertex_rate_cull);
         printf("vertex bw %.2fMB/s\n", vertex_bw);
         
-        printf("vertex %.2fM, transformed %.2fM, x%.2f\n", float(m_mesh.triangle_count()) / 1000000, float(gpu_vertex) / 1000000, 
-            float(gpu_vertex) / float(m_mesh.triangle_count()));
+        {
+            int n= m_mesh.index_count() ? m_mesh.index_count() : m_mesh.vertex_count();
+            printf("vertex %.2fM, transformed %.2fM, x%.2f\n", float(n) / 1000000, float(gpu_vertex) / 1000000, 
+                float(gpu_vertex) / float(n));
+        }
         
         printf("fragment %.2fM\n", float(gpu_fragment) / 1000000);
         
@@ -284,8 +291,11 @@ struct Bench : public AppCamera
             float(gpu_fragment) / 1000 });
         
         //
-        //~ Transform model= RotationY(global_time() / 120);
-        Transform model= RotationZ(global_time() / 120);
+        float rotation= global_time() / 120;
+        //~ Transform model= RotationY(rotation);
+        //~ Transform model= RotationZ(rotation);
+        Transform model= Identity();
+        //~ Transform model= RotationZ(45);
         //~ Transform view= camera().view();
         //~ Transform projection= camera().projection(window_width(), window_height(), 45);
         Transform view= Identity();
@@ -293,26 +303,33 @@ struct Bench : public AppCamera
         Transform mv= view * model;
         Transform mvp= projection * mv;
 
+        int nlights= int(global_time() / 1000) % 1024;
+        
+        //~ printf("\ndraw rotation %d\n", int(rotation) % 360);
+        printf("\nnlights %d\n", nlights);
+        
     #if 1
         // test 1 : normal
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+        
         glUseProgram(m_program_texture);
         program_uniform(m_program_texture, "mvpMatrix", mvp);
         program_uniform(m_program_texture, "mvMatrix", mv);
         program_use_texture(m_program_texture, "grid", 0, m_grid_texture);
+        program_uniform(m_program_texture, "lights", std::vector<vec3>(1024));
+        program_uniform(m_program_texture, "nlights", 1);
         
         //~ glBeginQuery(GL_TIME_ELAPSED, m_time_query);
+        //~ glBeginQuery(GL_SAMPLES_PASSED, m_fragment_query[m_frame]);
         glBeginQuery(GL_VERTEX_SHADER_INVOCATIONS_ARB, m_vertex_query[m_frame]);
-        glBeginQuery(GL_SAMPLES_PASSED, m_fragment_query[m_frame]);
-        //~ glBeginQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB, m_fragment_query[frame]);
+        glBeginQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB, m_fragment_query[m_frame]);
             
             m_mesh.draw(m_program_texture, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false, /* material */ false );
-        
+            
         //~ glEndQuery(GL_TIME_ELAPSED);
+        //~ glEndQuery(GL_SAMPLES_PASSED);
         glEndQuery(GL_VERTEX_SHADER_INVOCATIONS_ARB);
-        //~ glEndQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB);
-        glEndQuery(GL_SAMPLES_PASSED);
+        glEndQuery(GL_FRAGMENT_SHADER_INVOCATIONS_ARB);
     #endif
     
         // bench 1 : que les triangles
@@ -324,6 +341,7 @@ struct Bench : public AppCamera
         program_uniform(m_program_texture, "mvpMatrix", mvp);
         program_uniform(m_program_texture, "mvMatrix", mv);
         program_use_texture(m_program_texture, "grid", 0, m_grid_texture);
+        program_uniform(m_program_texture, "nlights", 1);
         
         glBeginQuery(GL_TIME_ELAPSED, m_bench1_query[m_frame]);
             
@@ -385,14 +403,11 @@ struct Bench : public AppCamera
         
         glUseProgram(m_program_cull);
         program_uniform(m_program_cull, "mvpMatrix", mvp);
-        //~ program_uniform(m_program_cull, "mvMatrix", mv);
-        //~ program_use_texture(m_program_cull, "grid", 0, m_grid_texture);
         
         glBeginQuery(GL_TIME_ELAPSED, m_bench3_query[m_frame]);
             
-            //~ m_mesh.draw(m_program_cull, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false, /* material */ false );
             m_mesh.draw(m_program_cull, /* use position */ true, /* use texcoord */ false, /* use normal */ false, /* use color */ false, /* material */ false );
-        
+            
         glEndQuery(GL_TIME_ELAPSED);
     #endif
         
@@ -406,7 +421,7 @@ struct Bench : public AppCamera
         glBeginQuery(GL_TIME_ELAPSED, m_bench2_query[m_frame]);
             
             m_mesh.draw(m_program_rasterizer, /* use position */ true, /* use texcoord */ false, /* use normal */ false, /* use color */ false, /* material */ false );
-        
+            
         glEndQuery(GL_TIME_ELAPSED);
         
         // test 1 : normal
@@ -416,11 +431,12 @@ struct Bench : public AppCamera
         program_uniform(m_program_texture, "mvpMatrix", mvp);
         program_uniform(m_program_texture, "mvMatrix", mv);
         program_use_texture(m_program_texture, "grid", 0, m_grid_texture);
+        program_uniform(m_program_texture, "nlights", nlights);
         
         glBeginQuery(GL_TIME_ELAPSED, m_time_query[m_frame]);
             
             m_mesh.draw(m_program_texture, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false, /* material */ false );
-        
+            
         glEndQuery(GL_TIME_ELAPSED);
         
         // recycle les requetes...
