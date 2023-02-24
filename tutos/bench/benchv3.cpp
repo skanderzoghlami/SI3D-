@@ -316,7 +316,7 @@ struct Bench : public AppCamera
         program_uniform(m_program_texture, "mvpMatrix", mvp);
         program_uniform(m_program_texture, "mvMatrix", mv);
         program_use_texture(m_program_texture, "grid", 0, m_grid_texture);
-        program_uniform(m_program_texture, "lights", std::vector<vec3>(1024));
+        program_uniform(m_program_texture, "lights", std::vector<vec3>(64));
         program_uniform(m_program_texture, "nlights", 1);
         
         //~ glBeginQuery(GL_TIME_ELAPSED, m_time_query);

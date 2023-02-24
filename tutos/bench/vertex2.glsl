@@ -33,7 +33,7 @@ in vec3 vertex_position;
 
 uniform sampler2D grid;
 uniform int nlights;
-uniform vec3 lights[1024];
+uniform vec3 lights[64];
 
 out vec4 fragment_color;
 
