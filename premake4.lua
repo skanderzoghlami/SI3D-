@@ -1,11 +1,6 @@
 solution "gKit2light"
     configurations { "debug", "release" }
 
-    platforms { "x64", "x32" }
-if _PREMAKE_VERSION >="5.0" then
-    platforms { "arm64" }
-end
-    
     includedirs { ".", "src/gKit" }
     
     gkit_dir = path.getabsolute(".")
@@ -45,17 +40,11 @@ end
         buildoptions { "-flto"}
         linkoptions { "-flto"}
     
-    configuration { "windows", "gmake", "x32" }
+    configuration { "windows", "codeblocks" }
+        location "build"
+        debugdir "."
         buildoptions { "-U__STRICT_ANSI__"} -- pour definir M_PI
-        buildoptions { "-std=c++11", "-fpermissive" }
-        defines { "WIN32", "_WIN32" }
-        includedirs { "extern/mingw/include" }
-        libdirs { "extern/mingw/lib" }
-        links { "mingw32", "SDL2main", "SDL2", "SDL2_image", "opengl32", "glew32" }
-    
-    configuration { "windows", "codeblocks", "x32" }
-        buildoptions { "-U__STRICT_ANSI__"} -- pour definir M_PI
-        buildoptions { "-std=c++11", "-fpermissive" }
+        buildoptions { "-std=c++11" }
         defines { "WIN32", "_WIN32" }
         includedirs { "extern/mingw/include" }
         libdirs { "extern/mingw/lib" }
@@ -82,7 +71,7 @@ end
     
     configuration "macosx"
         frameworks= "-F /Library/Frameworks/"
-        buildoptions { "-std=c++14 -Wno-deprecated-declarations" }
+        buildoptions { "-std=c++17 -Wno-deprecated-declarations" }
         defines { "GK_MACOS" }
         buildoptions { frameworks }
         linkoptions { frameworks .. " -framework OpenGL -framework SDL2 -framework SDL2_image" }
