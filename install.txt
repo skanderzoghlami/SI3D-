@@ -30,9 +30,9 @@ par exemple, pour ubuntu et ses variantes :
 
 ## windows
 
-les librairies et premake4/5 sont regroupées dans une archive [disponible ici](https://perso.univ-lyon1.fr/jean-claude.iehl/Public/educ/M1IMAGE/extern_mingw_visual.zip).
+les librairies et premake5 sont regroupées dans une archive [disponible ici](https://perso.univ-lyon1.fr/jean-claude.iehl/Public/educ/M1IMAGE/extern_mingw_visual.zip).
     - dezippez l'archive dans le répertoire de gKit, vous devez obtenir un répertoire `gkit2light/extern`,
-    - copiez `extern/premake4.exe` et `extern/premake5.exe` dans le répertoire de gKit.
+    - copiez `extern/premake5.exe` dans le répertoire de gKit.
 
 ## mac os 
 
@@ -44,17 +44,13 @@ les librairies sont disponibles :
     - copier le contenu des fichiers .dmg dans `/Library/Frameworks`, 
     - copiez [premake](https://premake.github.io/download) dans le répertoire de gKit.
 
-les librairies et premake sont également dispo dans le gestionnaire de paquets [brew](https://brew.sh/).
-
+les librairies et premake sont également dispo dans le gestionnaire de paquets [brew](https://brew.sh/). utiliser brew est probablement la solution la plus directe.
 
 # étape 3 : générer les projets
 
 _pourquoi ?_ gkit compile et fonctionne sur linux, windows, mac os, ios, android et meme WebGL. Chaque système dispose de plusieurs compilateurs et environnements 
 de travail. Il n'est pas envisageable de créer et de maintenir tous ces projets manuellement. gkit utilise donc un outil : un générateur de projet, ce qui permet de décrire 
 les projets une seule fois et c'est l'outil (premake dans ce cas...) qui génère le projet pour votre environnement de travail. 
-
-__remarque :__ non gKit ne peut pas fonctioner avec WSL sous windows, comme toutes les applications qui utilisent openGL / cuda, etc. microsoft travaille dessus, mais 
-pour l'instant ca ne fonctionne pas. on est donc obligé de compiler une application native windows, avec un compilateur et ses librairies. 
 
 il faut donc apprendre à générer le projet pour votre environnement de travail, en utilisant premake.
 
@@ -68,7 +64,7 @@ _rappel :_ commandes `ls` et `cd` pour naviguer.
 ## windows + codeblocks
 
 \code
-./premake4.exe codeblocks
+./premake5.exe codeblocks
 \endcode
 
 le workspace (groupe de projets) codeblocks ainsi que les projets sont crées dans le répertoire `build/`, ouvrez `build/gKit2light.workspace`.
@@ -90,8 +86,6 @@ la solution visual studio ainsi que les projets sont crées dans le répertoire 
 ## mac os + xcode
 
 \code
-./premake4 xcode 
-ou
 ./premake5 xcode 
 \endcode
 
@@ -99,8 +93,6 @@ ou
 ## mac os + makefile
 
 \code
-./premake4 gmake
-ou
 ./premake5 gmake
 \endcode
 
@@ -113,6 +105,8 @@ le `Makefile` se trouve dans le répertoire de base de gKit.
 \endcode
 
 le `Makefile` se trouve dans le répertoire de base de gKit. 
+
+_remarque :_ si premake5 est disponible dans les paquets de votre distribution utilisez-le ! cf `premake5 gmake`
 
 
 # étape 4 : compilez un exemple {#section_premake}
@@ -128,8 +122,8 @@ les makefile peuvent générer les versions debug (cf utiliser un debugger comme
 interressant pour les projets avec beaucoup de calculs) :
     - `make help`, affiche la liste des projets et les options disponibles,
     - `make tuto7_camera`, compile la version debug de tuto7_camera,
-    - `make tuto7_camera config=release64`, compile la version release, 64bits, de tuto7_camera,
-    - `make tuto7_camera config=debug64`, compile la version debug, 64bits, de tuto7_camera,
+    - `make tuto7_camera config=release`, compile la version release, 64bits, de tuto7_camera,
+    - `make tuto7_camera config=debug`, compile la version debug, 64bits, de tuto7_camera,
     - `make tuto7_camera verbose=1`, compile la version debug de tuto7_camera et affiche le détail des commandes exécutées.
 
 les exécutables sont crées dans le répertoire `gkit2light/bin`, pour les exécuter : 
@@ -164,7 +158,7 @@ et ajoutez votre fichier, sans l'extension .cpp, par exemple `tp1` :
         "tp1"
     }
 
-et regénérez le projet, cf premake4 gmake / vs2022 / xcode ...
+et regénérez le projet, cf premake gmake / vs2022 / xcode ...
 
 ## projet avec plusieurs fichiers .cpp
 
@@ -209,16 +203,12 @@ dans la déclaration du dernier paramètre.
 ## erreur lors du link / édition de liens
 
 par défaut les projets essayent de générer la version 32bits des applications, selon votre système, ce n'est pas possible ou obligatoire...
-
-configurations générées :
-    - windows codeblocks : utilisez la version 32bits, compilez avec `win32`
-    - windows visual studio : utilisez la version 64bits, compilez avec `x64`
-    - mac os : les frameworks contiennent les 2 versions.
-    - mac os ARM M1 : 64bits    
    
 ## erreurs à l'exécution sous windows, fichiers .dll manquants
     - pour visual studio : copiez le contenu de `extern/visual/bin` dans `gkit2light/bin`
     - pour codeblocks : copiez le contenu de `extern/mingw/bin` dans `gkit2light/bin`
+
+_remarque :_ on doit pouvoir lefaire automatiquement dans le premake4.lua, mais je n'ai pas encore pris le temps de le faire...
 
 ## erreur de compilation / windows SDK 
 premake ne connait pas la version du windows sdk actuellement installé sur votre machine, par défaut, il génère des projets pour le sdk de base de windows 10. 
@@ -227,14 +217,6 @@ si cette version du sdk n'est pas installée et que les exemples ne compilent pa
 	- click droit sur solution et choisissez `re-cibler la solution` / `retarget solution`. 
 vous pouvez maintenant compiler un projet...
 
-## premake4 ou premake5 ?
-
-premake4 est la seule version qui sait générer des projets windows + codeblocks pour simplifier la vie des étudiants de l'option LIFgraphique en L2. 
-
-premake5 est la seule version capable de générer les solutions pour les dernières versions de visual studio.
-
-premake4 est disponible dans les paquets linux, c'est aussi la solution la plus directe. sinon, il suffit de charger directement premake5 et de le copier 
-dans un répertoire local présent dans le `PATH`, ou dans le répertoire de gKit.
 
 ## j'aime pas premake
 
@@ -271,7 +253,9 @@ par contre, il faudra modifier `premake4.lua` qui configure la solution avec le 
 \endcode
 dans la section `configuration { "windows", "vs*" }`
 
-la liste des paquets / librairies / utilitaires est disponible [https://vcpkg.info/](https://vcpkg.info/)
+remplacez également le nom des configuration "debug" et "release" par "Debug" et "Release", quisont reconnues directement par visual studio et vcpkg.
+
+la liste des paquets / librairies / utilitaires est disponible [https://vcpkg.io/en/packages.html](https://vcpkg.io/en/packages.html)
 
 */
 
