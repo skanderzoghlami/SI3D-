@@ -111,7 +111,8 @@ _remarque :_ si premake5 est disponible dans les paquets de votre distribution u
 
 # étape 4 : compilez un exemple {#section_premake}
 
-compilez `tuto7_camera`, par exemple.
+compilez `tuto7_camera`, par exemple si vous voulez verifiez qu'une application openGL fonctionne.
+sinon vous pouvez compiler `base` si vous souhaitez vérifier qu'une application simple fonctionne.
 
 et vérifiez que tout fonctionne.
 sous windows, il faudra probablement copier les `dll` dans `gkit2light/bin` la première fois, cf la [FAQ](#FAQ) plus bas.
@@ -129,6 +130,8 @@ interressant pour les projets avec beaucoup de calculs) :
 les exécutables sont crées dans le répertoire `gkit2light/bin`, pour les exécuter : 
 
     bin/tuto7_camera
+    ou
+    bin/base
 
 __remarque :__ gKit charge quelques fichiers au démarrage, il faut l'exécuter depuis le répertoire de base `gKit2light/`, sinon les fichiers ne seront pas correctement
 chargés.
@@ -148,13 +151,13 @@ trouvez cette déclaration dans premake4.lua :
 
     -- description des projets		
     local projects = {
-        "shader_kit"
+        "base"
     }
 
 et ajoutez votre fichier, sans l'extension .cpp, par exemple `tp1` :
 
     local projects = {
-        "shader_kit",
+        "base",
         "tp1"
     }
 

@@ -10,7 +10,9 @@ solution "gKit2light"
         defines { "DEBUG" }
         if _PREMAKE_VERSION >="5.0" then
             symbols "on"
+            cppdialect "c++11"
         else
+            buildoptions { "-std=c++11" }
             flags { "Symbols" }
         end
     
@@ -19,14 +21,15 @@ solution "gKit2light"
 --~ 		defines { "NDEBUG" }
 --~ 		defines { "GK_RELEASE" }
         if _PREMAKE_VERSION >="5.0" then
-            optimize "speed"
+            optimize "full"
+            cppdialect "c++11"
         else
+            buildoptions { "-std=c++11" }
             flags { "OptimizeSpeed" }
         end
         
     configuration "linux"
         buildoptions { "-mtune=native -march=native" }
-        buildoptions { "-std=c++11" }
         buildoptions { "-W -Wall -Wextra -Wsign-compare -Wno-unused-parameter -Wno-unused-function -Wno-unused-variable", "-pipe" }
         links { "GLEW", "SDL2", "SDL2_image", "GL" }
     
@@ -46,7 +49,6 @@ if _PREMAKE_VERSION >="5.0" then
         debugdir "."
         
         buildoptions { "-U__STRICT_ANSI__"} -- pour definir M_PI
-        buildoptions { "-std=c++11" }
         defines { "WIN32", "_WIN32" }
         includedirs { "extern/mingw/include" }
         libdirs { "extern/mingw/lib" }
@@ -91,12 +93,26 @@ end
 
  -- description des projets		 
 projects = {
+    "base"
+}
+
+for i, name in ipairs(projects) do
+    project(name)
+        language "C++"
+        kind "ConsoleApp"
+        targetdir "bin"
+        files ( gkit_files )
+        files { gkit_dir .. "/projects/" .. name..'.cpp' }
+end
+
+ -- description des utilitaires
+tools= {
     "shader_kit",
     "shader_kit_debug",
     "image_viewer"
 }
 
-for i, name in ipairs(projects) do
+for i, name in ipairs(tools) do
     project(name)
         language "C++"
         kind "ConsoleApp"
