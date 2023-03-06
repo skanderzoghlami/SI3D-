@@ -102,7 +102,7 @@ for i, name in ipairs(projects) do
         kind "ConsoleApp"
         targetdir "bin"
         files ( gkit_files )
-        files { gkit_dir .. "/projects/" .. name..'.cpp' }
+        files { gkit_dir .. "/projets/" .. name..'.cpp' }
 end
 
  -- description des utilitaires
