@@ -1,4 +1,4 @@
-
+ 	
 #include <chrono>
 
 #include "app.h"
@@ -159,7 +159,7 @@ struct Bench : public AppCamera
             //~ const int size= 16;
             //~ const int slices= 128;
             const int size= m_grid_size;
-            const int ntriangles= 65536*2;
+            const int ntriangles= 1024*1024*2;
             int slices= ntriangles / (size*size*2);
             
             for(int nz= 0; nz < slices; nz++)
@@ -177,12 +177,28 @@ struct Bench : public AppCamera
                     m_mesh.normal(0, 0, 1);
                     
                     m_mesh.texcoord(0, 0).vertex( x,  y, z);
-                    m_mesh.texcoord(1, 0).vertex(x1,  y, z);
-                    m_mesh.texcoord(1, 1).vertex(x1, y1, z);
+                    if(nz == 0)
+                    {		
+                        m_mesh.texcoord(1, 0).vertex(x1,  y, z);
+                        m_mesh.texcoord(1, 1).vertex(x1, y1, z);
+                    }
+                    else    // retourne les triangles des autres couches, pas de rasterization...
+                    {
+                        m_mesh.texcoord(1, 1).vertex(x1, y1, z);
+                        m_mesh.texcoord(1, 0).vertex(x1,  y, z);
+                    }
                     
                     m_mesh.texcoord(0, 0).vertex(x1, y1, z);
-                    m_mesh.texcoord(1, 0).vertex( x, y1, z);
-                    m_mesh.texcoord(1, 1).vertex( x,  y, z);
+                    if(nz == 0)
+                    {		
+                        m_mesh.texcoord(1, 0).vertex( x, y1, z);
+                        m_mesh.texcoord(1, 1).vertex( x,  y, z);
+                    }
+                    else
+                    {
+                        m_mesh.texcoord(1, 1).vertex( x,  y, z);
+                        m_mesh.texcoord(1, 0).vertex( x, y1, z);
+                    }
                 }
             }
             
@@ -372,6 +388,7 @@ struct Bench : public AppCamera
             
         printf("\ndraw rotation %d\n", int(rotation) % 360);
         //~ printf("\nnlights %d\n", nlights);
+        printf("frame %d\n", m_frame_counter);
         
     #if 1
         // test 1 : normal
