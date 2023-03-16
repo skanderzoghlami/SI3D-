@@ -1,11 +1,11 @@
 
-sizes="4 8 16 32 64 128 256"
+sizes="4 8 16 32 64 128 256 512 1024"
 
 for size in $sizes
 do
 echo bench grid $size
 
-bin/benchv3 --frames 600 --rotation false --size $size -o grid$size.txt
+#~ bin/benchv3 --frames 2000 --rotation true --size $size -o grid$size.txt
 
 done
 
@@ -19,7 +19,7 @@ gnuplot <<EOF
 set term pdfcairo enhanced 
 set term pdfcairo linewidth 0.5
 
-set output "bench$plot.pdf"
+set output "bench-$plot.pdf"
 
 set grid
 set style line 11 lc rgb '#808080' lt 1
@@ -35,7 +35,33 @@ set style line 5 lt 1  lw 1 lc rgb '#77ac30' # green
 set style line 6 lt 1  lw 1 lc rgb '#4dbeee' # light-blue
 set style line 7 lt 1  lw 1 lc rgb '#a2142f' # red
 
-plot  "./grid4.txt" u 0:$plot w lines t "grid 4", "./grid8.txt" u 0:$plot w lines t "grid 8", "./grid16.txt" u 0:$plot w lines t "grid 16", "./grid32.txt" u 0:$plot w lines t "grid 32", "./grid64.txt" u 0:$plot  w lines t "grid 64"
+# plot  "./grid4.txt" u 0:$plot w lines t "grid 4", "./grid8.txt" u 0:$plot w lines t "grid 8", "./grid16.txt" u 0:$plot w lines t "grid 16", "./grid32.txt" u 0:$plot w lines t "grid 32", "./grid64.txt" u 0:$plot  w lines t "grid 64"
+plot [10:] "./grid16.txt" u 0:$plot w lines t "grid 16", "./grid64.txt" u 0:$plot w lines t "grid 64", "./grid256.txt" u 0:$plot w lines t "grid 256", "./grid1024.txt" u 0:$plot w lines t "grid 1024"
+EOF
+
+
+gnuplot <<EOF
+set term pdfcairo enhanced 
+set term pdfcairo linewidth 0.5
+
+set output "benchbig-$plot.pdf"
+
+set grid
+set style line 11 lc rgb '#808080' lt 1
+set border 3 back ls 11
+set tics nomirror
+
+# parula palette
+set style line 1 lt 1  lw 1 lc rgb '#0072bd' # blue
+set style line 2 lt 1  lw 1 lc rgb '#d95319' # orange
+set style line 3 lt 1  lw 1 lc rgb '#edb120' # yellow
+set style line 4 lt 1  lw 1 lc rgb '#7e2f8e' # purple
+set style line 5 lt 1  lw 1 lc rgb '#77ac30' # green
+set style line 6 lt 1  lw 1 lc rgb '#4dbeee' # light-blue
+set style line 7 lt 1  lw 1 lc rgb '#a2142f' # red
+
+plot [10:] "./grid4.txt" u 0:$plot w lines t "grid 4", "./grid8.txt" u 0:$plot w lines t "grid 8", "./grid16.txt" u 0:$plot w lines t "grid 16", "./grid32.txt" u 0:$plot w lines t "grid 32", "./grid64.txt" u 0:$plot  w lines t "grid 64"
+# plot  "./grid16.txt" u 0:$plot w lines t "grid 16", "./grid64.txt" u 0:$plot w lines t "grid 64", "./grid256.txt" u 0:$plot w lines t "grid 256", "./grid1024.txt" u 0:$plot w lines t "grid 1024"
 EOF
 
 done
