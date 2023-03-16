@@ -20,6 +20,16 @@
 
 #include "orbiter.h"
 
+
+#ifdef WIN32
+// force les portables a utiliser leur gpu dedie, et pas le gpu integre au processeur...
+extern "C" {
+    __declspec(dllexport) unsigned NvOptimusEnablement = 0x00000001;
+    __declspec(dllexport) unsigned AmdPowerXpressRequestHighPerformance = 1;
+}
+#endif
+
+
 struct stats
 {
     float draw_time;
@@ -31,11 +41,100 @@ struct stats
 
 const int MAX_FRAMES= 3;
 
+
+unsigned options_find( const char *name, const std::vector<const char *>& options )
+{
+    for(unsigned i= 0; i < options.size(); i++)
+        if(strcmp(name, options[i]) == 0)
+            return i;
+    
+    return options.size();
+}
+
+int option_value_or( const char *name, int default_value, const std::vector<const char *>& options )
+{
+    unsigned option= options_find(name, options);
+    if(option != options.size())
+    {
+        int v= 0;
+        if(option +1 < options.size())
+            if(sscanf(options[option+1], "%d", &v) == 1)
+                return v;
+    }
+    
+    return default_value;
+}
+
+bool option_or( const char *name, bool default_value, const std::vector<const char *>& options )
+{
+    unsigned option= options_find(name, options);
+    if(option != options.size())
+        return true;
+    
+    return default_value;
+}
+
+bool option_value_or( const char *name, bool default_value, const std::vector<const char *>& options )
+{
+    unsigned option= options_find(name, options);
+    if(option +1 < options.size())
+    {
+        int v= 0;
+        if(sscanf(options[option+1], "%d", &v) == 1)
+            return v;
+        
+        char tmp[1024];
+        if(sscanf(options[option+1], "%s", tmp) == 1)
+        {
+            if(strcmp(tmp, "true") == 0) 
+                return true;
+            else if(strcmp(tmp, "false") == 0)
+                return false;
+        }
+    }
+    
+    return default_value;
+}
+
+const char *option_value_or( const char *name, const char *default_value, const std::vector<const char *>& options )
+{
+    unsigned option= options_find(name, options);
+    if(option +1 < options.size())
+        return options[option +1];
+    
+    return default_value;
+}
+
+
 struct Bench : public AppCamera
 {
-    Bench( ) : AppCamera(1024, 1024, 4, 3)
+    Bench( std::vector<const char *>& options ) : AppCamera(1024, 1024, 4, 3)
     {
+        {
+            const unsigned char *vendor= glGetString(GL_VENDOR);
+            const unsigned char *renderer= glGetString(GL_RENDERER);
+            const unsigned char *version= glGetString(GL_VERSION);
+            
+            printf("[openGL  ] %s\n[renderer] %s\n[vendor  ] %s\n", version, renderer, vendor);
+        }
+
         vsync_off();
+        
+        m_grid_size= option_value_or("--size", 16, options);
+        printf("grid size %d\n", m_grid_size);
+        
+        m_use_rotation= option_value_or("--rotation", false, options);
+        printf("rotation %d\n", m_use_rotation);
+        
+        m_output_filename= option_value_or("-o", "bench3.txt", options);
+        printf("writing output to '%s'...\n", m_output_filename);
+        
+        m_frame_counter= 0;
+        m_last_frame= option_value_or("--frames", 0, options);
+        if(m_last_frame > 0)
+            printf("last frame %d\n", m_last_frame);
+        
+        //~ exit(0);
     }
     
     int init( )
@@ -57,14 +156,15 @@ struct Bench : public AppCamera
     #else
         m_mesh.create(GL_TRIANGLES);
         {
-            const int size= 32;
-            const int slices= 32;
+            //~ const int size= 16;
+            //~ const int slices= 128;
+            const int size= m_grid_size;
+            const int ntriangles= 65536*2;
+            int slices= ntriangles / (size*size*2);
             
             for(int nz= 0; nz < slices; nz++)
             {
                 float z= float(nz) / float(slices);
-                //~ float z= 1 - float(nz) / float(slices);
-                //~ float z= 0;
                 
                 for(int ny= 0; ny < size; ny++)
                 for(int nx= 0; nx < size; nx++)
@@ -85,6 +185,9 @@ struct Bench : public AppCamera
                     m_mesh.texcoord(1, 1).vertex( x,  y, z);
                 }
             }
+            
+            assert(m_mesh.triangle_count() == ntriangles);
+            printf("grid %dx%dx%d %d\n", size, size, slices, ntriangles);
         }
     #endif
         
@@ -102,50 +205,6 @@ struct Bench : public AppCamera
         if(program_errors(m_program_texture) || program_errors(m_program_cull) || program_errors(m_program_rasterizer))
             return -1;
         
-#if 0 // plus la peine
-        // bench 1 : triangles mal orientes / cull rate
-    #if 0
-        // triangles non indexes...
-        m_triangles.create(GL_TRIANGLES);
-        for(int i= 0; i < 1024*1024; i++)
-        {
-            // back face culled
-            m_triangles.texcoord(0, 0);
-            m_triangles.normal(0, 0, 1);
-            m_triangles.vertex(-0.1, -0.1, 0);
-            
-            m_triangles.texcoord(1, 1);
-            m_triangles.normal(0, 0, 1);
-            m_triangles.vertex( 0.1,  0.1, 0);
-            
-            m_triangles.texcoord(1, 0);
-            m_triangles.normal(0, 0, 1);
-            m_triangles.vertex( 0.1, -0.1, 0);
-        }
-    #else
-    
-        // triangles indexes
-        m_triangles.create(GL_TRIANGLES);
-        // back face culled
-        m_triangles.texcoord(0, 0);
-        m_triangles.normal(0, 0, 1);
-        unsigned a= m_triangles.vertex(-0.1, -0.1, 0);
-        
-        m_triangles.texcoord(1, 1);
-        m_triangles.normal(0, 0, 1);
-        unsigned b= m_triangles.vertex( 0.1,  0.1, 0);
-        
-        m_triangles.texcoord(1, 0);
-        m_triangles.normal(0, 0, 1);
-        unsigned c= m_triangles.vertex( 0.1, -0.1, 0);
-        
-        for(int i= 0; i < 1024*1024; i++)
-            m_triangles.triangle(a, b, c);
-    #endif
-    
-        m_vao_triangles= m_triangles.create_buffers(/* use_texcoord */ true, /* use_normal */ true, /* use_color */ false, /* use_material_index */ false);
-#endif
-
         //
         m_frame= 0;
         glGenQueries(MAX_FRAMES, m_time_query);
@@ -189,7 +248,7 @@ struct Bench : public AppCamera
     
     int quit( )
     {
-        FILE *out= fopen("bench3.txt", "wt");
+        FILE *out= fopen(m_output_filename, "wt");
         if(out)
         {
             for(auto& stats : m_stats)
@@ -292,9 +351,12 @@ struct Bench : public AppCamera
         
         //
         float rotation= global_time() / 120;
+        if(m_use_rotation == false)
+            rotation= 45;
+            
         //~ Transform model= RotationY(rotation);
-        //~ Transform model= RotationZ(rotation);
-        Transform model= Identity();
+        Transform model= RotationZ(rotation);
+        //~ Transform model= Identity();
         //~ Transform model= RotationZ(45);
         //~ Transform view= camera().view();
         //~ Transform projection= camera().projection(window_width(), window_height(), 45);
@@ -303,10 +365,13 @@ struct Bench : public AppCamera
         Transform mv= view * model;
         Transform mvp= projection * mv;
 
-        int nlights= int(global_time() / 1000) % 1024;
+        //~ int nlights= int(global_time() / 1000) % 1024;
+        int nlights= 1;
         
-        //~ printf("\ndraw rotation %d\n", int(rotation) % 360);
-        printf("\nnlights %d\n", nlights);
+        
+            
+        printf("\ndraw rotation %d\n", int(rotation) % 360);
+        //~ printf("\nnlights %d\n", nlights);
         
     #if 1
         // test 1 : normal
@@ -427,6 +492,18 @@ struct Bench : public AppCamera
         // test 1 : normal
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
+        static int wireframe= 0;
+        if(key_state(' '))
+        {
+            clear_key_state(' ');
+            wireframe= (wireframe +1) %2;
+        }
+        
+        if(wireframe == 0)
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        else
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        
         glUseProgram(m_program_texture);
         program_uniform(m_program_texture, "mvpMatrix", mvp);
         program_uniform(m_program_texture, "mvMatrix", mv);
@@ -438,9 +515,16 @@ struct Bench : public AppCamera
             m_mesh.draw(m_program_texture, /* use position */ true, /* use texcoord */ true, /* use normal */ true, /* use color */ false, /* material */ false );
             
         glEndQuery(GL_TIME_ELAPSED);
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         
         // recycle les requetes...
         m_frame= (m_frame + 1) % MAX_FRAMES;
+        
+        // compte les frames et continue, ou pas...
+        m_frame_counter++;
+        if(m_last_frame > 0 && m_frame_counter > m_last_frame)
+            return 0;
         
         return 1;   // on continue
     }
@@ -448,14 +532,17 @@ struct Bench : public AppCamera
 protected:
     std::vector<stats> m_stats;
 
+    const char *m_output_filename;
+    int m_grid_size;
+    int m_use_rotation;
+    int m_last_frame;
+    int m_frame_counter;
+
     Mesh m_mesh;
-    //~ Mesh m_triangles;
     GLuint m_program_cull;
     GLuint m_program_texture;
     GLuint m_program_rasterizer;
     GLuint m_grid_texture;
-
-    //~ GLuint m_vao_triangles;
 
     int m_frame;
     GLuint m_time_query[MAX_FRAMES];
@@ -469,6 +556,8 @@ protected:
 
 int main( int argc, char **argv )
 {
-    Bench app;
+    std::vector<const char *> options(argv+1, argv+argc);
+    Bench app( options );
+    
     app.run();
 }

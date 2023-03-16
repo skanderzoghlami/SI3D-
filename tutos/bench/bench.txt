@@ -1,0 +1,41 @@
+
+sizes="4 8 16 32 64 128 256"
+
+for size in $sizes
+do
+echo bench grid $size
+
+bin/benchv3 --frames 600 --rotation false --size $size -o grid$size.txt
+
+done
+
+plots="1 2 3 4 5"
+
+for plot in $plots
+do
+echo plot $plot
+
+gnuplot <<EOF
+set term pdfcairo enhanced 
+set term pdfcairo linewidth 0.5
+
+set output "bench$plot.pdf"
+
+set grid
+set style line 11 lc rgb '#808080' lt 1
+set border 3 back ls 11
+set tics nomirror
+
+# parula palette
+set style line 1 lt 1  lw 1 lc rgb '#0072bd' # blue
+set style line 2 lt 1  lw 1 lc rgb '#d95319' # orange
+set style line 3 lt 1  lw 1 lc rgb '#edb120' # yellow
+set style line 4 lt 1  lw 1 lc rgb '#7e2f8e' # purple
+set style line 5 lt 1  lw 1 lc rgb '#77ac30' # green
+set style line 6 lt 1  lw 1 lc rgb '#4dbeee' # light-blue
+set style line 7 lt 1  lw 1 lc rgb '#a2142f' # red
+
+plot  "./grid4.txt" u 0:$plot w lines t "grid 4", "./grid8.txt" u 0:$plot w lines t "grid 8", "./grid16.txt" u 0:$plot w lines t "grid 16", "./grid32.txt" u 0:$plot w lines t "grid 32", "./grid64.txt" u 0:$plot  w lines t "grid 64"
+EOF
+
+done

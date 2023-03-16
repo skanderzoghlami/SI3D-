@@ -49,7 +49,8 @@ void main( )
 		color= color + diffuse * ndotl;
 	}
 	
-	fragment_color= vec4(color / 8, 1);
+	//~ fragment_color= vec4(color / 8, 1);
+	fragment_color= vec4(color / nlights, 1);
 	
 	//~ fragment_color= vec4(1);
 }
