@@ -300,9 +300,27 @@ struct Bench : public AppCamera
         
         // filtre les pics...
         {
-            char tmp[1024];
-            sprintf(tmp, "filtered-%s", m_output_filename);
-            FILE *out= fopen(tmp, "wt");
+            char tmp[1024]= { 0 };
+            char filename[1024]= { 0 };
+            const char *path;
+            const char *file;
+            const char *slash= strrchr(m_output_filename, '/');
+            if(slash == nullptr)
+            {
+                path= ".";
+                file= m_output_filename;
+            }
+            else 
+            {
+                strncat(tmp, m_output_filename, slash - m_output_filename);
+                path= tmp;
+                file= slash+1;
+            }
+            
+            sprintf(filename, "%s/filtered-%s", path, file);
+            printf("writing filtered data to '%s'...\n", filename);
+            
+            FILE *out= fopen(filename, "wt");
             if(out)
             {
                 for(unsigned i= 1; i+1 < m_stats.size(); i++)
