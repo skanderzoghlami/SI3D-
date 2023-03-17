@@ -642,4 +642,6 @@ int main( int argc, char **argv )
     Bench app( options );
     
     app.run();
+
+    return 0;
 }

@@ -1,12 +1,12 @@
 @echo off 
 
-set prefix= bench
-:: prefix="vega64"
-:: prefix="geforce1070"
-:: prefix="geforce1080ti"
-:: prefix="geforce2080"
-:: prefix="geforce3080"
-:: prefix="ryzen5500U"
+:: set prefix= bench
+:: set prefix= vega64
+:: set prefix= geforce1070
+:: set prefix= geforce1080ti
+:: set prefix= geforce2080
+set prefix= geforce3080
+:: set prefix= ryzen5500U
 md %prefix%
 
 :: transform
