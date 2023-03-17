@@ -1,5 +1,6 @@
+prefix="bench"
 #~ prefix="vega64"
-prefix="geforce1070"
+#~ prefix="geforce1070"
 #~ prefix="geforce1080ti"
 #~ prefix="geforce2080"
 #~ prefix="geforce3080"
@@ -41,6 +42,9 @@ done
 
 
 ## plots
+#~ pprefix="$prefix/"
+pprefix="$prefix/filtered-"
+
 # counters
 plots="1 2 3 4 5"
 for id in $plots
@@ -51,7 +55,7 @@ gnuplot <<EOF
 set term pdfcairo enhanced 
 set term pdfcairo linewidth 0.5
 
-set output "$prefix/bench-$id.pdf"
+set output "${pprefix}bench-$id.pdf"
 
 set grid
 set style line 11 lc rgb '#808080' lt 1
@@ -67,7 +71,7 @@ set style line 5 lt 1  lw 1 lc rgb '#77ac30' # green
 set style line 6 lt 1  lw 1 lc rgb '#4dbeee' # light-blue
 set style line 7 lt 1  lw 1 lc rgb '#a2142f' # red
 
-plot [10:] "$prefix/grid-16.txt" u 0:$id w lines t "grid 16", "$prefix/grid-64.txt" u 0:$id w lines t "grid 64", "$prefix/grid-256.txt" u 0:$id w lines t "grid 256", "$prefix/grid-1024.txt" u 0:$id w lines t "grid 1024"
+plot [10:] "${pprefix}grid-16.txt" u 0:$id w lines t "grid 16", "${pprefix}grid-64.txt" u 0:$id w lines t "grid 64", "${pprefix}grid-256.txt" u 0:$id w lines t "grid 256", "${pprefix}grid-1024.txt" u 0:$id w lines t "grid 1024"
 EOF
 
 
@@ -75,7 +79,7 @@ gnuplot <<EOF
 set term pdfcairo enhanced 
 set term pdfcairo linewidth 0.5
 
-set output "$prefix/bench-big-$id.pdf"
+set output "${pprefix}bench-big-$id.pdf"
 
 set grid
 set style line 11 lc rgb '#808080' lt 1
@@ -91,7 +95,7 @@ set style line 5 lt 1  lw 1 lc rgb '#77ac30' # green
 set style line 6 lt 1  lw 1 lc rgb '#4dbeee' # light-blue
 set style line 7 lt 1  lw 1 lc rgb '#a2142f' # red
 
-plot [10:] "$prefix/grid-4.txt" u 0:$id w lines t "grid 4", "$prefix/grid-8.txt" u 0:$id w lines t "grid 8", "$prefix/grid-16.txt" u 0:$id w lines t "grid 16", "$prefix/grid-32.txt" u 0:$id w lines t "grid 32", "$prefix/grid-64.txt" u 0:$id  w lines t "grid 64"
+plot [10:] "${pprefix}grid-4.txt" u 0:$id w lines t "grid 4", "${pprefix}grid-8.txt" u 0:$id w lines t "grid 8", "${pprefix}grid-16.txt" u 0:$id w lines t "grid 16", "${pprefix}grid-32.txt" u 0:$id w lines t "grid 32", "${pprefix}grid-64.txt" u 0:$id  w lines t "grid 64"
 EOF
 
 done
@@ -102,7 +106,7 @@ gnuplot <<EOF
 set term pdfcairo enhanced 
 set term pdfcairo linewidth 0.5
 
-set output "$prefix/triangles-$id.pdf"
+set output "${pprefix}triangles-$id.pdf"
 
 set grid
 set style line 11 lc rgb '#808080' lt 1
@@ -118,7 +122,7 @@ set style line 5 lt 1  lw 1 lc rgb '#77ac30' # green
 set style line 6 lt 1  lw 1 lc rgb '#4dbeee' # light-blue
 set style line 7 lt 1  lw 1 lc rgb '#a2142f' # red
 
-plot [10:] "$prefix/triangles-65536.txt" u 0:$id w lines t "triangles 65536", "$prefix/triangles-262144.txt" u 0:$id w lines t "triangles 262144", "$prefix/triangles-1048576.txt" u 0:$id w lines t "triangles 1048576", "$prefix/triangles-4194304.txt" u 0:$id w lines t "triangles 4194304"
+plot [10:] "${pprefix}triangles-65536.txt" u 0:$id w lines t "triangles 65536", "${pprefix}triangles-262144.txt" u 0:$id w lines t "triangles 262144", "${pprefix}triangles-1048576.txt" u 0:$id w lines t "triangles 1048576", "${pprefix}triangles-4194304.txt" u 0:$id w lines t "triangles 4194304"
 EOF
 
 # lights
@@ -126,7 +130,7 @@ gnuplot <<EOF
 set term pdfcairo enhanced 
 set term pdfcairo linewidth 0.5
 
-set output "$prefix/lights-$id.pdf"
+set output "${pprefix}lights-$id.pdf"
 
 set grid
 set style line 11 lc rgb '#808080' lt 1
@@ -142,6 +146,6 @@ set style line 5 lt 1  lw 1 lc rgb '#77ac30' # green
 set style line 6 lt 1  lw 1 lc rgb '#4dbeee' # light-blue
 set style line 7 lt 1  lw 1 lc rgb '#a2142f' # red
 
-plot [10:] "$prefix/lights-1.txt" u 0:$id w lines t "lights 1", "$prefix/lights-8.txt" u 0:$id w lines t "lights 8", "$prefix/lights-16.txt" u 0:$id w lines t "lights 16", "$prefix/lights-32.txt" u 0:$id w lines t "lights 32"
+plot [10:] "${pprefix}lights-1.txt" u 0:$id w lines t "lights 1", "${pprefix}lights-8.txt" u 0:$id w lines t "lights 8", "${pprefix}lights-16.txt" u 0:$id w lines t "lights 16", "${pprefix}lights-32.txt" u 0:$id w lines t "lights 32"
 EOF
 
