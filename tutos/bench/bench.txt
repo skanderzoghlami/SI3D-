@@ -1,25 +1,57 @@
+prefix="vega64"
+#~ prefix="geforce1070"
+#~ prefix="geforce1080ti"
+#~ prefix="geforce2080"
+#~ prefix="geforce3080"
+#~ prefix="ryzen5500U"
+mkdir $prefix
 
+# transform
+triangles="65536 262144 1048576 4194304"
+
+for n in $triangles
+do
+echo bench triangles $n
+
+bin/benchv3 --frames 1000 --rotation true --triangles $n -o $prefix/triangles-$n.txt
+
+done
+
+# fragments
+lights="1 8 16 32"
+
+for n in $lights
+do
+echo bench lights $n
+
+bin/benchv3 --frames 1000 --rotation true --lights $n -o $prefix/lights-$n.txt
+
+done
+
+# rasterization
 sizes="4 8 16 32 64 128 256 512 1024"
 
-for size in $sizes
+for n in $sizes
 do
-echo bench grid $size
+echo bench grid $n
 
-#~ bin/benchv3 --frames 2000 --rotation true --size $size -o grid$size.txt
+bin/benchv3 --frames 2000 --rotation true --size $n -o $prefix/grid-$n.txt
 
 done
 
+
+## plots
+# counters
 plots="1 2 3 4 5"
-
-for plot in $plots
+for id in $plots
 do
-echo plot $plot
+echo plot $id
 
 gnuplot <<EOF
 set term pdfcairo enhanced 
 set term pdfcairo linewidth 0.5
 
-set output "bench-$plot.pdf"
+set output "$prefix/bench-$id.pdf"
 
 set grid
 set style line 11 lc rgb '#808080' lt 1
@@ -35,8 +67,7 @@ set style line 5 lt 1  lw 1 lc rgb '#77ac30' # green
 set style line 6 lt 1  lw 1 lc rgb '#4dbeee' # light-blue
 set style line 7 lt 1  lw 1 lc rgb '#a2142f' # red
 
-# plot  "./grid4.txt" u 0:$plot w lines t "grid 4", "./grid8.txt" u 0:$plot w lines t "grid 8", "./grid16.txt" u 0:$plot w lines t "grid 16", "./grid32.txt" u 0:$plot w lines t "grid 32", "./grid64.txt" u 0:$plot  w lines t "grid 64"
-plot [10:] "./grid16.txt" u 0:$plot w lines t "grid 16", "./grid64.txt" u 0:$plot w lines t "grid 64", "./grid256.txt" u 0:$plot w lines t "grid 256", "./grid1024.txt" u 0:$plot w lines t "grid 1024"
+plot [10:] "./grid-16.txt" u 0:$id w lines t "grid 16", "./grid-64.txt" u 0:$id w lines t "grid 64", "./grid-256.txt" u 0:$id w lines t "grid 256", "./grid-1024.txt" u 0:$id w lines t "grid 1024"
 EOF
 
 
@@ -44,7 +75,7 @@ gnuplot <<EOF
 set term pdfcairo enhanced 
 set term pdfcairo linewidth 0.5
 
-set output "benchbig-$plot.pdf"
+set output "$prefix/bench-big-$id.pdf"
 
 set grid
 set style line 11 lc rgb '#808080' lt 1
@@ -60,8 +91,57 @@ set style line 5 lt 1  lw 1 lc rgb '#77ac30' # green
 set style line 6 lt 1  lw 1 lc rgb '#4dbeee' # light-blue
 set style line 7 lt 1  lw 1 lc rgb '#a2142f' # red
 
-plot [10:] "./grid4.txt" u 0:$plot w lines t "grid 4", "./grid8.txt" u 0:$plot w lines t "grid 8", "./grid16.txt" u 0:$plot w lines t "grid 16", "./grid32.txt" u 0:$plot w lines t "grid 32", "./grid64.txt" u 0:$plot  w lines t "grid 64"
-# plot  "./grid16.txt" u 0:$plot w lines t "grid 16", "./grid64.txt" u 0:$plot w lines t "grid 64", "./grid256.txt" u 0:$plot w lines t "grid 256", "./grid1024.txt" u 0:$plot w lines t "grid 1024"
+plot [10:] "./grid-4.txt" u 0:$id w lines t "grid 4", "./grid-8.txt" u 0:$id w lines t "grid 8", "./grid-16.txt" u 0:$id w lines t "grid 16", "./grid-32.txt" u 0:$id w lines t "grid 32", "./grid-64.txt" u 0:$id  w lines t "grid 64"
 EOF
 
 done
+
+# draw time
+id=1
+gnuplot <<EOF
+set term pdfcairo enhanced 
+set term pdfcairo linewidth 0.5
+
+set output "$prefix/triangles-$id.pdf"
+
+set grid
+set style line 11 lc rgb '#808080' lt 1
+set border 3 back ls 11
+set tics nomirror
+
+# parula palette
+set style line 1 lt 1  lw 1 lc rgb '#0072bd' # blue
+set style line 2 lt 1  lw 1 lc rgb '#d95319' # orange
+set style line 3 lt 1  lw 1 lc rgb '#edb120' # yellow
+set style line 4 lt 1  lw 1 lc rgb '#7e2f8e' # purple
+set style line 5 lt 1  lw 1 lc rgb '#77ac30' # green
+set style line 6 lt 1  lw 1 lc rgb '#4dbeee' # light-blue
+set style line 7 lt 1  lw 1 lc rgb '#a2142f' # red
+
+plot [10:] "./triangles-65536.txt" u 0:$id w lines t "triangles 65536", "./triangles-262144.txt" u 0:$id w lines t "triangles 262144", "./triangles-1048576.txt" u 0:$id w lines t "triangles 1048576", "./triangles-4194304.txt" u 0:$id w lines t "triangles 4194304"
+EOF
+
+# lights
+gnuplot <<EOF
+set term pdfcairo enhanced 
+set term pdfcairo linewidth 0.5
+
+set output "$prefix/lights-$id.pdf"
+
+set grid
+set style line 11 lc rgb '#808080' lt 1
+set border 3 back ls 11
+set tics nomirror
+
+# parula palette
+set style line 1 lt 1  lw 1 lc rgb '#0072bd' # blue
+set style line 2 lt 1  lw 1 lc rgb '#d95319' # orange
+set style line 3 lt 1  lw 1 lc rgb '#edb120' # yellow
+set style line 4 lt 1  lw 1 lc rgb '#7e2f8e' # purple
+set style line 5 lt 1  lw 1 lc rgb '#77ac30' # green
+set style line 6 lt 1  lw 1 lc rgb '#4dbeee' # light-blue
+set style line 7 lt 1  lw 1 lc rgb '#a2142f' # red
+
+plot [10:] "./lights-1.txt" u 0:$id w lines t "lights 1", "./lights-8.txt" u 0:$id w lines t "lights 8", "./lights-16.txt" u 0:$id w lines t "lights 16", "./lights-32.txt" u 0:$id w lines t "lights 32"
+EOF
+
