@@ -1,5 +1,5 @@
-prefix="vega64"
-#~ prefix="geforce1070"
+#~ prefix="vega64"
+prefix="geforce1070"
 #~ prefix="geforce1080ti"
 #~ prefix="geforce2080"
 #~ prefix="geforce3080"
@@ -67,7 +67,7 @@ set style line 5 lt 1  lw 1 lc rgb '#77ac30' # green
 set style line 6 lt 1  lw 1 lc rgb '#4dbeee' # light-blue
 set style line 7 lt 1  lw 1 lc rgb '#a2142f' # red
 
-plot [10:] "./grid-16.txt" u 0:$id w lines t "grid 16", "./grid-64.txt" u 0:$id w lines t "grid 64", "./grid-256.txt" u 0:$id w lines t "grid 256", "./grid-1024.txt" u 0:$id w lines t "grid 1024"
+plot [10:] "$prefix/grid-16.txt" u 0:$id w lines t "grid 16", "$prefix/grid-64.txt" u 0:$id w lines t "grid 64", "$prefix/grid-256.txt" u 0:$id w lines t "grid 256", "$prefix/grid-1024.txt" u 0:$id w lines t "grid 1024"
 EOF
 
 
@@ -91,7 +91,7 @@ set style line 5 lt 1  lw 1 lc rgb '#77ac30' # green
 set style line 6 lt 1  lw 1 lc rgb '#4dbeee' # light-blue
 set style line 7 lt 1  lw 1 lc rgb '#a2142f' # red
 
-plot [10:] "./grid-4.txt" u 0:$id w lines t "grid 4", "./grid-8.txt" u 0:$id w lines t "grid 8", "./grid-16.txt" u 0:$id w lines t "grid 16", "./grid-32.txt" u 0:$id w lines t "grid 32", "./grid-64.txt" u 0:$id  w lines t "grid 64"
+plot [10:] "$prefix/grid-4.txt" u 0:$id w lines t "grid 4", "$prefix/grid-8.txt" u 0:$id w lines t "grid 8", "$prefix/grid-16.txt" u 0:$id w lines t "grid 16", "$prefix/grid-32.txt" u 0:$id w lines t "grid 32", "$prefix/grid-64.txt" u 0:$id  w lines t "grid 64"
 EOF
 
 done
@@ -118,7 +118,7 @@ set style line 5 lt 1  lw 1 lc rgb '#77ac30' # green
 set style line 6 lt 1  lw 1 lc rgb '#4dbeee' # light-blue
 set style line 7 lt 1  lw 1 lc rgb '#a2142f' # red
 
-plot [10:] "./triangles-65536.txt" u 0:$id w lines t "triangles 65536", "./triangles-262144.txt" u 0:$id w lines t "triangles 262144", "./triangles-1048576.txt" u 0:$id w lines t "triangles 1048576", "./triangles-4194304.txt" u 0:$id w lines t "triangles 4194304"
+plot [10:] "$prefix/triangles-65536.txt" u 0:$id w lines t "triangles 65536", "$prefix/triangles-262144.txt" u 0:$id w lines t "triangles 262144", "$prefix/triangles-1048576.txt" u 0:$id w lines t "triangles 1048576", "$prefix/triangles-4194304.txt" u 0:$id w lines t "triangles 4194304"
 EOF
 
 # lights
@@ -142,6 +142,6 @@ set style line 5 lt 1  lw 1 lc rgb '#77ac30' # green
 set style line 6 lt 1  lw 1 lc rgb '#4dbeee' # light-blue
 set style line 7 lt 1  lw 1 lc rgb '#a2142f' # red
 
-plot [10:] "./lights-1.txt" u 0:$id w lines t "lights 1", "./lights-8.txt" u 0:$id w lines t "lights 8", "./lights-16.txt" u 0:$id w lines t "lights 16", "./lights-32.txt" u 0:$id w lines t "lights 32"
+plot [10:] "$prefix/lights-1.txt" u 0:$id w lines t "lights 1", "$prefix/lights-8.txt" u 0:$id w lines t "lights 8", "$prefix/lights-16.txt" u 0:$id w lines t "lights 16", "$prefix/lights-32.txt" u 0:$id w lines t "lights 32"
 EOF
 
