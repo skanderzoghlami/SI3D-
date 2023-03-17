@@ -39,7 +39,7 @@ struct stats
     float bench4_time;
 };
 
-const int MAX_FRAMES= 3;
+const int MAX_FRAMES= 6;
 
 
 unsigned options_find( const char *name, const std::vector<const char *>& options )
@@ -65,7 +65,7 @@ int option_value_or( const char *name, int default_value, const std::vector<cons
     return default_value;
 }
 
-bool option_or( const char *name, bool default_value, const std::vector<const char *>& options )
+bool option_flag_or( const char *name, bool default_value, const std::vector<const char *>& options )
 {
     unsigned option= options_find(name, options);
     if(option != options.size())
@@ -120,8 +120,18 @@ struct Bench : public AppCamera
 
         vsync_off();
         
+        m_verbose= option_flag_or("-v", false, options);
+        printf("verbose %s\n", m_verbose ? "true" : "false");
+        
+        m_triangles= option_value_or("--triangles", 1024*1024*2, options);
+        printf("triangles %d\n", m_triangles);
+        
         m_grid_size= option_value_or("--size", 16, options);
-        printf("grid size %d\n", m_grid_size);
+        m_grid_slices= m_triangles / (m_grid_size*m_grid_size*2);
+        printf("grid size %dx%dx%d\n", m_grid_size, m_grid_size, m_grid_slices);
+        
+        m_lights= option_value_or("--lights", 1, options);
+        printf("lights %d\n", m_lights);
         
         m_use_rotation= option_value_or("--rotation", false, options);
         printf("rotation %d\n", m_use_rotation);
@@ -156,23 +166,17 @@ struct Bench : public AppCamera
     #else
         m_mesh.create(GL_TRIANGLES);
         {
-            //~ const int size= 16;
-            //~ const int slices= 128;
-            const int size= m_grid_size;
-            const int ntriangles= 1024*1024*2;
-            int slices= ntriangles / (size*size*2);
-            
-            for(int nz= 0; nz < slices; nz++)
+            for(int nz= 0; nz < m_grid_slices; nz++)
             {
-                float z= float(nz) / float(slices);
+                float z= float(nz) / float(m_grid_slices);
                 
-                for(int ny= 0; ny < size; ny++)
-                for(int nx= 0; nx < size; nx++)
+                for(int ny= 0; ny < m_grid_size; ny++)
+                for(int nx= 0; nx < m_grid_size; nx++)
                 {
-                    float x= float(nx) / float(size) * std::sqrt(2) - std::sqrt(2)/2;
-                    float y= float(ny) / float(size) * std::sqrt(2) - std::sqrt(2)/2;
-                    float x1= float(nx+1) / float(size) * std::sqrt(2) - std::sqrt(2)/2;
-                    float y1= float(ny+1) / float(size) * std::sqrt(2) - std::sqrt(2)/2;
+                    float x= float(nx) / float(m_grid_size) * std::sqrt(2) - std::sqrt(2)/2;
+                    float y= float(ny) / float(m_grid_size) * std::sqrt(2) - std::sqrt(2)/2;
+                    float x1= float(nx+1) / float(m_grid_size) * std::sqrt(2) - std::sqrt(2)/2;
+                    float y1= float(ny+1) / float(m_grid_size) * std::sqrt(2) - std::sqrt(2)/2;
                     
                     m_mesh.normal(0, 0, 1);
                     
@@ -202,8 +206,7 @@ struct Bench : public AppCamera
                 }
             }
             
-            assert(m_mesh.triangle_count() == ntriangles);
-            printf("grid %dx%dx%d %d\n", size, size, slices, ntriangles);
+            assert(m_mesh.triangle_count() == m_triangles);
         }
     #endif
         
@@ -262,6 +265,21 @@ struct Bench : public AppCamera
         return 0;
     }
     
+    float filtered( const float before, const float value, const float after )
+    {
+        float v[3]= { before, value, after };
+        
+        for(int i= 0; i < 3; i++)
+        for(int j= i+1; j < 3; j++)
+            if(v[j] < v[i])
+                std::swap(v[i],v[j]);
+        assert(v[0] <= v[1]);
+        assert(v[0] <= v[2]);
+        assert(v[1] <= v[2]);
+        
+        return v[1];
+    }
+    
     int quit( )
     {
         FILE *out= fopen(m_output_filename, "wt");
@@ -278,6 +296,27 @@ struct Bench : public AppCamera
             }
             
             fclose(out);
+        }
+        
+        // filtre les pics...
+        {
+            char tmp[1024];
+            sprintf(tmp, "filtered-%s", m_output_filename);
+            FILE *out= fopen(tmp, "wt");
+            if(out)
+            {
+                for(unsigned i= 1; i+1 < m_stats.size(); i++)
+                {
+                    fprintf(out, "%f %f %f %f %f\n", 
+                        filtered(m_stats[i-1].draw_time,   m_stats[i].draw_time,   m_stats[i+1].draw_time),     // 1 time
+                        filtered(m_stats[i-1].bench1_time, m_stats[i].bench1_time, m_stats[i+1].bench1_time),   // 2 discard
+                        filtered(m_stats[i-1].bench2_time, m_stats[i].bench2_time, m_stats[i+1].bench2_time),   // 3 rasterizer
+                        filtered(m_stats[i-1].bench3_time, m_stats[i].bench3_time, m_stats[i+1].bench3_time),   // 4 cull
+                        filtered(m_stats[i-1].bench4_time, m_stats[i].bench4_time, m_stats[i+1].bench4_time));  // 5 fragments
+                }
+                
+                fclose(out);
+            }
         }
         
         m_mesh.release();
@@ -304,7 +343,7 @@ struct Bench : public AppCamera
             GLuint ready= GL_FALSE;
             glGetQueryObjectuiv(m_time_query[m_frame], GL_QUERY_RESULT_AVAILABLE, &ready);
             if(ready != GL_TRUE)
-                printf("[oops] wait query, frame %d...\n", m_frame);
+                printf("[oops] wait query, frame %d...\n", m_frame_counter);
         }
         
         auto wait_start= std::chrono::high_resolution_clock::now();
@@ -329,33 +368,36 @@ struct Bench : public AppCamera
         GLint64 gpu_bench4_draw= 0;
         glGetQueryObjecti64v(m_bench4_query[m_frame], GL_QUERY_RESULT, &gpu_bench4_draw);
         
-        printf("  %.2fus draw time = %.2fus vertex (%.2fus culled) + %2.fus rasterizer\n", 
-            float(gpu_draw) / 1000,
-            float(gpu_bench1_draw) / 1000,
-            float(gpu_bench3_draw) / 1000,
-            float(gpu_bench2_draw) / 1000);
-        
-        float triangle_rate= float(m_mesh.triangle_count()) / float(gpu_draw) * 1000;
-        
-        float vertex_size= float(gpu_vertex * 32) / float(1024 * 1024);
-        float vertex_rate_discard= float(gpu_vertex) / float(gpu_bench1_draw) * 1000;
-        float vertex_rate_cull= float(gpu_vertex) / float(gpu_bench3_draw) * 1000;
-        float vertex_bw= vertex_size / float(gpu_bench1_draw) * 1000000000;
-        printf("triangle rate %.2fMt/s\n", triangle_rate);
-        printf("vertex rate discard %.2fMv/s cull %.2fMv/s\n", vertex_rate_discard, vertex_rate_cull);
-        printf("vertex bw %.2fMB/s\n", vertex_bw);
-        
+        if(m_verbose)
         {
-            int n= m_mesh.index_count() ? m_mesh.index_count() : m_mesh.vertex_count();
-            printf("vertex %.2fM, transformed %.2fM, x%.2f\n", float(n) / 1000000, float(gpu_vertex) / 1000000, 
-                float(gpu_vertex) / float(n));
+            printf("  %.2fus draw time = %.2fus vertex (%.2fus culled) + %2.fus rasterizer\n", 
+                float(gpu_draw) / 1000,
+                float(gpu_bench1_draw) / 1000,
+                float(gpu_bench3_draw) / 1000,
+                float(gpu_bench2_draw) / 1000);
+            
+            float triangle_rate= float(m_mesh.triangle_count()) / float(gpu_draw) * 1000;
+            
+            float vertex_size= float(gpu_vertex * 32) / float(1024 * 1024);
+            float vertex_rate_discard= float(gpu_vertex) / float(gpu_bench1_draw) * 1000;
+            float vertex_rate_cull= float(gpu_vertex) / float(gpu_bench3_draw) * 1000;
+            float vertex_bw= vertex_size / float(gpu_bench1_draw) * 1000000000;
+            printf("triangle rate %.2fMt/s\n", triangle_rate);
+            printf("vertex rate discard %.2fMv/s cull %.2fMv/s\n", vertex_rate_discard, vertex_rate_cull);
+            printf("vertex bw %.2fMB/s\n", vertex_bw);
+            
+            {
+                int n= m_mesh.index_count() ? m_mesh.index_count() : m_mesh.vertex_count();
+                printf("vertex %.2fM, transformed %.2fM, x%.2f\n", float(n) / 1000000, float(gpu_vertex) / 1000000, 
+                    float(gpu_vertex) / float(n));
+            }
+            
+            printf("fragment %.2fM\n", float(gpu_fragment) / 1000000);
+            
+            float fragment_rate= float(gpu_fragment) / float(gpu_draw - gpu_bench2_draw) * 1000;
+            printf("fragment rate %.2fMf/s, %uus draw time %u rasterizer %u\n", fragment_rate, 
+                unsigned(gpu_draw / 1000) - unsigned(gpu_bench2_draw / 1000), unsigned(gpu_draw / 1000), unsigned(gpu_bench2_draw / 1000));
         }
-        
-        printf("fragment %.2fM\n", float(gpu_fragment) / 1000000);
-        
-        float fragment_rate= float(gpu_fragment) / float(gpu_draw - gpu_bench2_draw) * 1000;
-        printf("fragment rate %.2fMf/s, %uus draw time %u rasterizer %u\n", fragment_rate, 
-            unsigned(gpu_draw / 1000) - unsigned(gpu_bench2_draw / 1000), unsigned(gpu_draw / 1000), unsigned(gpu_bench2_draw / 1000));
         
         m_stats.push_back({
             float(gpu_draw) / 1000, 
@@ -368,7 +410,7 @@ struct Bench : public AppCamera
         //
         float rotation= global_time() / 120;
         if(m_use_rotation == false)
-            rotation= 45;
+            rotation= 30;
             
         //~ Transform model= RotationY(rotation);
         Transform model= RotationZ(rotation);
@@ -382,13 +424,14 @@ struct Bench : public AppCamera
         Transform mvp= projection * mv;
 
         //~ int nlights= int(global_time() / 1000) % 1024;
-        int nlights= 1;
+        //~ int nlights= 1;
         
-        
-            
-        printf("\ndraw rotation %d\n", int(rotation) % 360);
+        //~ printf("\ndraw rotation %d\n", int(rotation) % 360);
         //~ printf("\nnlights %d\n", nlights);
-        printf("frame %d\n", m_frame_counter);
+        if(m_verbose)
+            printf("frame %d\n", m_frame_counter);
+        else
+            printf("\rframe %d    ", m_frame_counter);
         
     #if 1
         // test 1 : normal
@@ -525,7 +568,7 @@ struct Bench : public AppCamera
         program_uniform(m_program_texture, "mvpMatrix", mvp);
         program_uniform(m_program_texture, "mvMatrix", mv);
         program_use_texture(m_program_texture, "grid", 0, m_grid_texture);
-        program_uniform(m_program_texture, "nlights", nlights);
+        program_uniform(m_program_texture, "nlights", m_lights);
         
         glBeginQuery(GL_TIME_ELAPSED, m_time_query[m_frame]);
             
@@ -550,7 +593,11 @@ protected:
     std::vector<stats> m_stats;
 
     const char *m_output_filename;
+    int m_verbose;
     int m_grid_size;
+    int m_grid_slices;
+    int m_triangles;
+    int m_lights;
     int m_use_rotation;
     int m_last_frame;
     int m_frame_counter;
