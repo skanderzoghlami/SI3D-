@@ -41,7 +41,7 @@ bin/benchv3 --frames 2000 --rotation true --size $n -o $prefix/grid-$n.txt
 done
 
 # overdraw
-slices="1 4 8 16 128 256"
+slices="1 4 8 16 64"
 
 for n in $slices
 do
@@ -159,7 +159,7 @@ set style line 5 lt 1  lw 1 lc rgb '#77ac30' # green
 set style line 6 lt 1  lw 1 lc rgb '#4dbeee' # light-blue
 set style line 7 lt 1  lw 1 lc rgb '#a2142f' # red
 
-plot [10:] "${pprefix}overdraw-1.txt" u 0:$id w lines t "overdraw 1", "${pprefix}overdraw-4.txt" u 0:$id w lines t "overdraw 4", "${pprefix}overdraw-16.txt" u 0:$id w lines t "overdraw 16", "${pprefix}overdraw-64.txt" u 0:$id w lines t "overdraw-64", "${pprefix}overdraw-128.txt" u 0:$id w lines t "128", "${pprefix}overdraw-256.txt" u 0:$id w lines t "256"
+plot [10:] "${pprefix}overdraw-1.txt" u 0:$id w lines t "overdraw 1", "${pprefix}overdraw-4.txt" u 0:$id w lines t "overdraw 4", "${pprefix}overdraw-16.txt" u 0:$id w lines t "overdraw 16", "${pprefix}overdraw-64.txt" u 0:$id w lines t "overdraw-64"
 EOF
 
 # lights

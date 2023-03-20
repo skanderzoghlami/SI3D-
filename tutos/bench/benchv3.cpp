@@ -290,11 +290,16 @@ struct Bench : public AppCamera
     
     int quit( )
     {
+        printf("\n\n");
+        
         FILE *out= fopen(m_output_filename, "wt");
         if(out)
         {
+            double time= 0;
             for(auto& stats : m_stats)
             {
+                time+= stats.draw_time;
+                
                 fprintf(out, "%f %f %f %f %f\n", 
                     stats.draw_time,     // 1 time
                     stats.bench1_time,  // 2 discard
@@ -304,6 +309,8 @@ struct Bench : public AppCamera
             }
             
             fclose(out);
+            
+            printf("average %.2f\n", float(time) / m_stats.size());
         }
         
         // filtre les pics...
@@ -326,13 +333,14 @@ struct Bench : public AppCamera
             }
             
             sprintf(filename, "%s/filtered-%s", path, file);
-            printf("writing filtered data to '%s'...\n", filename);
-            
             FILE *out= fopen(filename, "wt");
             if(out)
             {
+                double time= 0;
                 for(unsigned i= 1; i+1 < m_stats.size(); i++)
                 {
+                    time+= filtered(m_stats[i-1].draw_time,   m_stats[i].draw_time,   m_stats[i+1].draw_time);
+                    
                     fprintf(out, "%f %f %f %f %f\n", 
                         filtered(m_stats[i-1].draw_time,   m_stats[i].draw_time,   m_stats[i+1].draw_time),     // 1 time
                         filtered(m_stats[i-1].bench1_time, m_stats[i].bench1_time, m_stats[i+1].bench1_time),   // 2 discard
@@ -342,7 +350,10 @@ struct Bench : public AppCamera
                 }
                 
                 fclose(out);
+                
+                printf("filtered average %.2f\n", float(time) / (m_stats.size() -2));
             }
+            // printf("writing filtered data to '%s'...\n", filename);
         }
         
         m_mesh.release();
