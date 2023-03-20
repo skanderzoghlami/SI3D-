@@ -40,10 +40,21 @@ bin/benchv3 --frames 2000 --rotation true --size $n -o $prefix/grid-$n.txt
 
 done
 
+# overdraw
+slices="1 4 8 16 128 256"
+
+for n in $slices
+do
+echo bench overdraw $n
+
+bin/benchv3 --frames 1000 --rotation true --overdraw $n -o $prefix/overdraw-$n.txt
+
+done
+
 
 ## plots
-#~ pprefix="$prefix/"
-pprefix="$prefix/filtered-"
+#~ pprefix="${prefix}/"
+pprefix="${prefix}/filtered-"
 
 # counters
 plots="1 2 3 4 5"
@@ -102,6 +113,7 @@ done
 
 # draw time
 id=1
+
 gnuplot <<EOF
 set term pdfcairo enhanced 
 set term pdfcairo linewidth 0.5
@@ -123,6 +135,31 @@ set style line 6 lt 1  lw 1 lc rgb '#4dbeee' # light-blue
 set style line 7 lt 1  lw 1 lc rgb '#a2142f' # red
 
 plot [10:] "${pprefix}triangles-65536.txt" u 0:$id w lines t "triangles 65536", "${pprefix}triangles-262144.txt" u 0:$id w lines t "triangles 262144", "${pprefix}triangles-1048576.txt" u 0:$id w lines t "triangles 1048576", "${pprefix}triangles-4194304.txt" u 0:$id w lines t "triangles 4194304"
+EOF
+
+
+# overdraw
+gnuplot <<EOF
+set term pdfcairo enhanced 
+set term pdfcairo linewidth 0.5
+
+set output "${pprefix}overdraw-$id.pdf"
+
+set grid
+set style line 11 lc rgb '#808080' lt 1
+set border 3 back ls 11
+set tics nomirror
+
+# parula palette
+set style line 1 lt 1  lw 1 lc rgb '#0072bd' # blue
+set style line 2 lt 1  lw 1 lc rgb '#d95319' # orange
+set style line 3 lt 1  lw 1 lc rgb '#edb120' # yellow
+set style line 4 lt 1  lw 1 lc rgb '#7e2f8e' # purple
+set style line 5 lt 1  lw 1 lc rgb '#77ac30' # green
+set style line 6 lt 1  lw 1 lc rgb '#4dbeee' # light-blue
+set style line 7 lt 1  lw 1 lc rgb '#a2142f' # red
+
+plot [10:] "${pprefix}overdraw-1.txt" u 0:$id w lines t "overdraw 1", "${pprefix}overdraw-4.txt" u 0:$id w lines t "overdraw 4", "${pprefix}overdraw-16.txt" u 0:$id w lines t "overdraw 16", "${pprefix}overdraw-64.txt" u 0:$id w lines t "overdraw-64", "${pprefix}overdraw-128.txt" u 0:$id w lines t "128", "${pprefix}overdraw-256.txt" u 0:$id w lines t "256"
 EOF
 
 # lights

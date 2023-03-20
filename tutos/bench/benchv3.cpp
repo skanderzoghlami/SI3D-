@@ -130,6 +130,14 @@ struct Bench : public AppCamera
         m_grid_slices= m_triangles / (m_grid_size*m_grid_size*2);
         printf("grid size %dx%dx%d\n", m_grid_size, m_grid_size, m_grid_slices);
         
+        m_overdraw= option_value_or("--overdraw", 1, options);
+        if(m_overdraw > m_grid_slices)
+        {
+            printf("[error] overdraw > slices...\n");
+            exit(1);
+        }
+        printf("overdraw %d slices\n", m_overdraw);
+        
         m_lights= option_value_or("--lights", 1, options);
         printf("lights %d\n", m_lights);
         
@@ -181,7 +189,7 @@ struct Bench : public AppCamera
                     m_mesh.normal(0, 0, 1);
                     
                     m_mesh.texcoord(0, 0).vertex( x,  y, z);
-                    if(nz == 0)
+                    if(nz < m_overdraw)
                     {		
                         m_mesh.texcoord(1, 0).vertex(x1,  y, z);
                         m_mesh.texcoord(1, 1).vertex(x1, y1, z);
@@ -193,7 +201,7 @@ struct Bench : public AppCamera
                     }
                     
                     m_mesh.texcoord(0, 0).vertex(x1, y1, z);
-                    if(nz == 0)
+                    if(nz < m_overdraw)
                     {		
                         m_mesh.texcoord(1, 0).vertex( x, y1, z);
                         m_mesh.texcoord(1, 1).vertex( x,  y, z);
@@ -614,6 +622,7 @@ protected:
     int m_verbose;
     int m_grid_size;
     int m_grid_slices;
+    int m_overdraw;
     int m_triangles;
     int m_lights;
     int m_use_rotation;
