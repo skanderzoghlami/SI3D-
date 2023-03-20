@@ -141,6 +141,7 @@ struct Bench : public AppCamera
         m_lights= option_value_or("--lights", 1, options);
         printf("lights %d\n", m_lights);
         
+        //~ m_use_rotation= option_or("--rotation", false, options);
         m_use_rotation= option_value_or("--rotation", false, options);
         printf("rotation %d\n", m_use_rotation);
         
@@ -218,15 +219,19 @@ struct Bench : public AppCamera
         }
     #endif
         
-        m_grid_texture= read_texture(0, "data/grid.png");
+        //~ m_grid_texture= read_texture(0, "data/grid.png");
+        m_grid_texture= read_texture(0, "bench-data/grid.png");
         
-        m_program_texture= read_program("tutos/bench/vertex2.glsl");
+        //~ m_program_texture= read_program("tutos/bench/vertex2.glsl");
+        m_program_texture= read_program("bench-data/vertex2.glsl");
         program_print_errors(m_program_texture);
         
-        m_program_cull= read_program("tutos/bench/vertex_cull.glsl");
+        //~ m_program_cull= read_program("tutos/bench/vertex_cull.glsl");
+        m_program_cull= read_program("bench-data/vertex_cull.glsl");
         program_print_errors(m_program_cull);
         
-        m_program_rasterizer= read_program("tutos/bench/rasterizer.glsl");
+        //~ m_program_rasterizer= read_program("tutos/bench/rasterizer.glsl");
+        m_program_rasterizer= read_program("bench-data/rasterizer.glsl");
         program_print_errors(m_program_rasterizer);
         
         if(program_errors(m_program_texture) || program_errors(m_program_cull) || program_errors(m_program_rasterizer))
@@ -300,7 +305,7 @@ struct Bench : public AppCamera
             {
                 time+= stats.draw_time;
                 
-                fprintf(out, "%f %f %f %f %f\n", 
+                fprintf(out, "%f ; %f ; %f ; %f ; %f\n", 
                     stats.draw_time,     // 1 time
                     stats.bench1_time,  // 2 discard
                     stats.bench2_time,  // 3 rasterizer
@@ -341,7 +346,7 @@ struct Bench : public AppCamera
                 {
                     time+= filtered(m_stats[i-1].draw_time,   m_stats[i].draw_time,   m_stats[i+1].draw_time);
                     
-                    fprintf(out, "%f %f %f %f %f\n", 
+                    fprintf(out, "%f ; %f ; %f ; %f ; %f\n", 
                         filtered(m_stats[i-1].draw_time,   m_stats[i].draw_time,   m_stats[i+1].draw_time),     // 1 time
                         filtered(m_stats[i-1].bench1_time, m_stats[i].bench1_time, m_stats[i+1].bench1_time),   // 2 discard
                         filtered(m_stats[i-1].bench2_time, m_stats[i].bench2_time, m_stats[i+1].bench2_time),   // 3 rasterizer

@@ -9,7 +9,7 @@ set prefix= bench
 :: set prefix= ryzen5500U
 md %prefix%
 
-:: transform
+:: triangles
 set triangles= 65536 262144 1048576 4194304
 
 (for %%n in (%triangles%) do (
@@ -43,7 +43,7 @@ bin\benchv3 --frames 2000 --rotation true --size %%n -o %prefix%/grid-%%n.txt
 ))
 
 :: overdraw
-set slices=1 4 8 16 128 256
+set slices= 1 4 8 16 32 64 128 256
 
 (for %%n in (%slices%) do (
 echo bench overdraw %%n
