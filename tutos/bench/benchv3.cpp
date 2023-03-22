@@ -30,15 +30,6 @@ extern "C" {
 #endif
 
 
-struct stats
-{
-    float draw_time;
-    float bench1_time;
-    float bench2_time;
-    float bench3_time;
-    float bench4_time;
-};
-
 const int MAX_FRAMES= 6;
 
 
@@ -219,19 +210,19 @@ struct Bench : public AppCamera
         }
     #endif
         
-        //~ m_grid_texture= read_texture(0, "data/grid.png");
-        m_grid_texture= read_texture(0, "bench-data/grid.png");
+        m_grid_texture= read_texture(0, "data/grid.png");
+        //~ m_grid_texture= read_texture(0, "bench-data/grid.png");
         
-        //~ m_program_texture= read_program("tutos/bench/vertex2.glsl");
-        m_program_texture= read_program("bench-data/vertex2.glsl");
+        m_program_texture= read_program("tutos/bench/vertex2.glsl");
+        //~ m_program_texture= read_program("bench-data/vertex2.glsl");
         program_print_errors(m_program_texture);
         
-        //~ m_program_cull= read_program("tutos/bench/vertex_cull.glsl");
-        m_program_cull= read_program("bench-data/vertex_cull.glsl");
+        m_program_cull= read_program("tutos/bench/vertex_cull.glsl");
+        //~ m_program_cull= read_program("bench-data/vertex_cull.glsl");
         program_print_errors(m_program_cull);
         
-        //~ m_program_rasterizer= read_program("tutos/bench/rasterizer.glsl");
-        m_program_rasterizer= read_program("bench-data/rasterizer.glsl");
+        m_program_rasterizer= read_program("tutos/bench/rasterizer.glsl");
+        //~ m_program_rasterizer= read_program("bench-data/rasterizer.glsl");
         program_print_errors(m_program_rasterizer);
         
         if(program_errors(m_program_texture) || program_errors(m_program_cull) || program_errors(m_program_rasterizer))
@@ -278,21 +269,20 @@ struct Bench : public AppCamera
         return 0;
     }
     
-    float filtered( const float before, const float value, const float after )
+    float median( const int index, const std::vector<float>& values, const int size=1 )
     {
-        float v[3]= { before, value, after };
+        if(index - size < 0) return 0;
+        if(index + size >= int(values.size())) return 0;
         
-        for(int i= 0; i < 3; i++)
-        for(int j= i+1; j < 3; j++)
-            if(v[j] < v[i])
-                std::swap(v[i],v[j]);
-        assert(v[0] <= v[1]);
-        assert(v[0] <= v[2]);
-        assert(v[1] <= v[2]);
+        std::vector<float> filter;
+        for(int i= index - size; i <= index + size; i++)
+            filter.push_back(values[i]);
         
-        return v[1];
+        std::sort(filter.begin(), filter.end());
+        return filter[size];
     }
-    
+
+
     int quit( )
     {
         printf("\n\n");
@@ -301,21 +291,20 @@ struct Bench : public AppCamera
         if(out)
         {
             double time= 0;
-            for(auto& stats : m_stats)
+            for(unsigned i= 0; i < m_time_stats.size(); i++)
             {
-                time+= stats.draw_time;
+                time+= m_time_stats[i];
                 
                 fprintf(out, "%f ; %f ; %f ; %f ; %f\n", 
-                    stats.draw_time,     // 1 time
-                    stats.bench1_time,  // 2 discard
-                    stats.bench2_time,  // 3 rasterizer
-                    stats.bench3_time,  // 4 cull
-                    stats.bench4_time); // 5 fragments
+                    m_time_stats[i],     // 1 time
+                    m_bench1_stats[i],  // 2 discard
+                    m_bench2_stats[i],  // 3 rasterizer
+                    m_bench3_stats[i],  // 4 cull
+                    m_bench4_stats[i]); // 5 fragments
             }
             
             fclose(out);
-            
-            printf("average %.2f\n", float(time) / m_stats.size());
+            printf("average %.2f\n", float(time) / m_time_stats.size());
         }
         
         // filtre les pics...
@@ -341,24 +330,57 @@ struct Bench : public AppCamera
             FILE *out= fopen(filename, "wt");
             if(out)
             {
+                // filtre les mesures...
+                std::array<std::vector<float>, 5> columns= { m_time_stats, m_bench1_stats, m_bench2_stats, m_bench3_stats, m_bench4_stats };
+                
+                const int filter_radius= 5;
+                std::array<std::vector<float>, 5> filtered_columns;
+                for(unsigned c= 0; c < columns.size(); c++)
+                for(unsigned i= filter_radius; i + filter_radius < columns[c].size(); i++)
+                    filtered_columns[c].push_back( median(i, columns[c], filter_radius) );
+                
                 double time= 0;
-                for(unsigned i= 1; i+1 < m_stats.size(); i++)
+                for(unsigned i= 0; i < filtered_columns[0].size(); i++)
                 {
-                    time+= filtered(m_stats[i-1].draw_time,   m_stats[i].draw_time,   m_stats[i+1].draw_time);
+                    time+= filtered_columns[0][i];
                     
                     fprintf(out, "%f ; %f ; %f ; %f ; %f\n", 
-                        filtered(m_stats[i-1].draw_time,   m_stats[i].draw_time,   m_stats[i+1].draw_time),     // 1 time
-                        filtered(m_stats[i-1].bench1_time, m_stats[i].bench1_time, m_stats[i+1].bench1_time),   // 2 discard
-                        filtered(m_stats[i-1].bench2_time, m_stats[i].bench2_time, m_stats[i+1].bench2_time),   // 3 rasterizer
-                        filtered(m_stats[i-1].bench3_time, m_stats[i].bench3_time, m_stats[i+1].bench3_time),   // 4 cull
-                        filtered(m_stats[i-1].bench4_time, m_stats[i].bench4_time, m_stats[i+1].bench4_time));  // 5 fragments
+                        filtered_columns[0][i],     // 1 time
+                        filtered_columns[1][i],     // 2 discard
+                        filtered_columns[2][i],     // 3 rasterizer
+                        filtered_columns[3][i],     // 4 cull
+                        filtered_columns[4][i]);    // 5 fragments
                 }
                 
                 fclose(out);
-                
-                printf("filtered average %.2f\n", float(time) / (m_stats.size() -2));
+                printf("filtered average %.2f\n", float(time) / filtered_columns[0].size());
             }
+            
             // printf("writing filtered data to '%s'...\n", filename);
+        }
+        
+        {
+            const unsigned char *vendor= glGetString(GL_VENDOR);
+            const unsigned char *renderer= glGetString(GL_RENDERER);
+            const unsigned char *version= glGetString(GL_VERSION);
+            
+            //~ printf("[openGL  ] %s\n[renderer] %s\n[vendor  ] %s\n", version, renderer, vendor);
+            
+            char tmp[1024];
+            strcpy(tmp, m_output_filename);
+            char *slash= strrchr(tmp, '/');
+            if(slash)
+                strcpy(slash, "/gpu.txt");
+            else
+                strcpy(tmp, "gpu.txt");
+            
+            FILE *out= fopen(tmp, "wt");
+            if(out)
+            {
+                fprintf(out, "\"%s\" ; \"%s\" ; \"%s\"\n", vendor, renderer, version);
+                
+                fclose(out);
+            }
         }
         
         m_mesh.release();
@@ -441,13 +463,11 @@ struct Bench : public AppCamera
                 unsigned(gpu_draw / 1000) - unsigned(gpu_bench2_draw / 1000), unsigned(gpu_draw / 1000), unsigned(gpu_bench2_draw / 1000));
         }
         
-        m_stats.push_back({
-            float(gpu_draw) / 1000, 
-            float(gpu_bench1_draw) / 1000,
-            float(gpu_bench2_draw) / 1000,
-            float(gpu_bench3_draw) / 1000,
-            //~ float(gpu_bench4_draw) / 1000 });
-            float(gpu_fragment) / 1000 });
+        m_time_stats.push_back( float(gpu_draw) / 1000 );
+        m_bench1_stats.push_back( float(gpu_bench1_draw) / 1000 );
+        m_bench2_stats.push_back( float(gpu_bench2_draw) / 1000 );
+        m_bench3_stats.push_back( float(gpu_bench3_draw) / 1000 );
+        m_bench4_stats.push_back( float(gpu_fragment) / 1000 );
         
         //
         float rotation= global_time() / 120;
@@ -520,48 +540,6 @@ struct Bench : public AppCamera
         // pas efficace sur les geforces, temps equivalent au draw normal...
     #endif
     
-    #if 0
-        // test synthetique bench 3 : que les triangles mal orientes
-        // mais triangles non indexes pour generer le meme nombre d'execution de vertex shader...
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        //~ glEnable(GL_RASTERIZER_DISCARD);
-        
-        glBindVertexArray(m_vao_triangles);
-        //~ glUseProgram(m_program_texture);
-        //~ program_uniform(m_program_texture, "mvpMatrix", Identity());
-        //~ program_uniform(m_program_texture, "mvMatrix", Identity());
-        //~ program_use_texture(m_program_texture, "grid", 0, m_grid_texture);
-        glUseProgram(m_program_cull);
-        program_uniform(m_program_cull, "mvpMatrix", Identity());
-        program_uniform(m_program_cull, "mvMatrix", Identity());
-        program_use_texture(m_program_cull, "grid", 0, m_grid_texture);
-        
-        {
-            int instances= m_mesh.triangle_count() / m_triangles.triangle_count();
-            int n= m_mesh.triangle_count() % m_triangles.triangle_count();
-            if(instances == 0 && n == 0) n= 1;
-            
-            glBeginQuery(GL_TIME_ELAPSED, m_bench3_query[m_frame]);
-            #if 1
-                // triangles non indexes
-                if(instances > 0)
-                    glDrawArraysInstanced(GL_TRIANGLES, 0, m_triangles.triangle_count()*3, instances);
-                if(n > 0)
-                    glDrawArrays(GL_TRIANGLES, 0, n*3);
-            #else
-            
-                // triangles indexes
-                if(instances > 0)
-                    glDrawElementsInstanced(GL_TRIANGLES, m_triangles.triangle_count()*3, GL_UNSIGNED_INT, (const void *) 0, instances);
-                if(n > 0)
-                    glDrawElements(GL_TRIANGLES, n*3, GL_UNSIGNED_INT, (const void *) 0);
-            #endif
-            
-            glEndQuery(GL_TIME_ELAPSED);
-        }
-        glDisable(GL_RASTERIZER_DISCARD);
-    #endif
-    
     #if 1
         // bench 3 : que les triangles mal orientes / elimines
         // force les sommets en dehors du frustum... 
@@ -632,7 +610,11 @@ struct Bench : public AppCamera
     }
     
 protected:
-    std::vector<stats> m_stats;
+    std::vector<float> m_time_stats;
+    std::vector<float> m_bench1_stats;
+    std::vector<float> m_bench2_stats;
+    std::vector<float> m_bench3_stats;
+    std::vector<float> m_bench4_stats;
 
     const char *m_output_filename;
     int m_verbose;
