@@ -139,6 +139,11 @@ int main( int argc, char **argv )
     }
     
     std::vector<stats> columns= read_bench(filename);
+    if(columns.empty())
+    {
+        printf("[error] reading '%s'...\n", filename);
+        return 1;
+    }
     
     std::vector<stats> filtered_columns(columns.size());
     for(unsigned i= 0; i < columns.size(); i++)
