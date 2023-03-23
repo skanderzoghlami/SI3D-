@@ -178,14 +178,16 @@ struct Trace : public App
         
         for(int i= 0; i < 4; i++)
         {
-            m_programs.push_back( read_program("tutos/bench/simple.glsl") );
+            // m_programs.push_back( read_program("tutos/bench/simple.glsl") );
+            m_programs.push_back(read_program("bench-data/simple.glsl"));
             if(program_errors(m_programs.back()))
             {
                 program_print_errors(m_programs.back());
                 return -1;
             }
                 
-            m_textures.push_back( read_texture(0, "data/grid.png") ); 
+            // m_textures.push_back(read_texture(0, "data/grid.png"));
+            m_textures.push_back(read_texture(0, "bench-data/grid.png"));
             if(m_textures.back() == 0)
                 return -1;
                 
@@ -366,10 +368,10 @@ struct Trace : public App
             //~ program_uniform(program, "mvMatrix", mv);
             int mvp_id= glGetUniformLocation(program, "mvpMatrix");
             int mv_id= glGetUniformLocation(program, "mvMatrix");
-            for(int i= 0; i < draw.instance_count; i+= 128)
+            for(int i= 0; i < draw.instance_count; i+= 64)
             {
                 n++;
-                int instances= std::min(128, draw.instance_count - i);
+                int instances= std::min(64, draw.instance_count - i);
                 
                 glUniformMatrix4fv(mvp_id, instances, GL_TRUE, (float *) mvp.data());
                 glUniformMatrix4fv(mv_id, instances, GL_TRUE, (float *) mv.data());
