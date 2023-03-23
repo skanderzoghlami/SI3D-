@@ -60,9 +60,9 @@ bin/bench_filter --size $filter -o $prefix/filtered$filter-overdraw-$n.txt -i $p
 done
 
 ## cpu
-bin/bench_trace --frames 1000 -o $prefix/cpu.txt --trace bench-data/trace.txt
-bin/bench_trace --frames 1000 -o $prefix/cpu2.txt --trace bench-data/trace2.txt
-bin/bench_trace --frames 1000 -o $prefix/cpu3.txt --trace bench-data/trace3.txt
+bin/bench_trace --frames 1000 -o $prefix/cpu-1.txt --trace bench-data/trace.txt
+bin/bench_trace --frames 1000 -o $prefix/cpu2-1.txt --trace bench-data/trace2.txt
+bin/bench_trace --frames 1000 -o $prefix/cpu3-1.txt --trace bench-data/trace3.txt
 
 
 ## plots
