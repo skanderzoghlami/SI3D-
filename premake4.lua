@@ -265,6 +265,20 @@ project("bench_filter")
 	targetdir "bin"
 	files ( gkit_files )
 	files { gkit_dir .. "/tutos/bench/bench_filter.cpp" }
+		
+project("bench_trace")
+	language "C++"
+	kind "ConsoleApp"
+	targetdir "bin"
+	files ( gkit_files )
+	files { gkit_dir .. "/tutos/bench/bench_trace.cpp" }
+	
+project("bench_scene")
+	language "C++"
+	kind "ConsoleApp"
+	targetdir "bin"
+	files ( gkit_files )
+	files { gkit_dir .. "/tutos/bench/bench_scene.cpp" }
 	
 project("bench_setup")
 	language "C++"

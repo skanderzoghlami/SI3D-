@@ -52,3 +52,9 @@ echo %prefix%/overdraw-%%n.txt
 bin\benchv3 --frames 1000 --rotation true --overdraw  %%n -o %prefix%/overdraw-%%n.txt
 
 ))
+
+:: cpu
+bin/bench_trace --frames 1000 -o $prefix/cpu.txt --trace trace.txt
+bin/bench_trace --frames 1000 -o $prefix/cpu2.txt --trace trace2.txt
+bin/bench_trace --frames 1000 -o $prefix/cpu3.txt --trace trace3.txt
+

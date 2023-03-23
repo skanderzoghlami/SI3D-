@@ -1,5 +1,5 @@
 
-#version 330
+#version 420
 
 #ifdef VERTEX_SHADER
 
