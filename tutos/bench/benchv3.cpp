@@ -293,7 +293,7 @@ struct Bench : public AppCamera
         if(out)
         {
             double time= 0;
-            for(unsigned i= 0; i < m_time_stats.size(); i++)
+            for(unsigned i= MAX_FRAMES; i < m_time_stats.size(); i++)
             {
                 time+= m_time_stats[i];
                 
@@ -306,7 +306,7 @@ struct Bench : public AppCamera
             }
             
             fclose(out);
-            printf("average %.2f\n", float(time) / m_time_stats.size());
+            printf("average %.2f\n", float(time) / (m_time_stats.size() - MAX_FRAMES));
         }
         
         // filtre les pics...
@@ -338,7 +338,7 @@ struct Bench : public AppCamera
                 const int filter_radius= 5;
                 std::array<std::vector<float>, 5> filtered_columns;
                 for(unsigned c= 0; c < columns.size(); c++)
-                for(unsigned i= filter_radius; i + filter_radius < columns[c].size(); i++)
+                for(unsigned i= MAX_FRAMES + filter_radius; i + filter_radius < columns[c].size(); i++)
                     filtered_columns[c].push_back( median(i, columns[c], filter_radius) );
                 
                 double time= 0;
