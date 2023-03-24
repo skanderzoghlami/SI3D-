@@ -178,16 +178,16 @@ struct Trace : public App
         
         for(int i= 0; i < 4; i++)
         {
-            // m_programs.push_back( read_program("tutos/bench/simple.glsl") );
-            m_programs.push_back(read_program("bench-data/simple.glsl"));
+            m_programs.push_back( read_program("tutos/bench/simple.glsl") );
+            //~ m_programs.push_back(read_program("bench-data/simple.glsl"));
             if(program_errors(m_programs.back()))
             {
                 program_print_errors(m_programs.back());
                 return -1;
             }
                 
-            // m_textures.push_back(read_texture(0, "data/grid.png"));
-            m_textures.push_back(read_texture(0, "bench-data/grid.png"));
+            m_textures.push_back(read_texture(0, "data/grid.png"));
+            //~ m_textures.push_back(read_texture(0, "bench-data/grid.png"));
             if(m_textures.back() == 0)
                 return -1;
                 
@@ -281,7 +281,8 @@ struct Trace : public App
         
         auto start= std::chrono::high_resolution_clock::now();
         
-        int n= 0;
+        int ndraws= 0;
+        int ntriangles= 0;
         int nprograms= 0;
         int nbuffers= 0;
         int ntextures= 0;
@@ -325,10 +326,9 @@ struct Trace : public App
         int last_program= -1;
         int last_texture= -1;
         
-        std::vector<Transform> mvp(128);
-        std::vector<Transform> mv(128);
-        //~ Transform mvp;
+        Transform projection;
         //~ Transform mv;
+        std::vector<Transform> mv(128);
         
         for(unsigned i= 0; i < m_draws.size(); i++)
         {
@@ -364,21 +364,20 @@ struct Trace : public App
                 program_use_texture(program, "grid", 0, texture);
             }
             
-            //~ program_uniform(program, "mvpMatrix", mvp);
-            //~ program_uniform(program, "mvMatrix", mv);
-            int mvp_id= glGetUniformLocation(program, "mvpMatrix");
+            
+            program_uniform(program, "projectionMatrix", projection);
             int mv_id= glGetUniformLocation(program, "mvMatrix");
-            for(int i= 0; i < draw.instance_count; i+= 64)
+            for(int i= 0; i < draw.instance_count; i+= 128)
             {
-                n++;
-                int instances= std::min(64, draw.instance_count - i);
+                ndraws++;
                 
-                glUniformMatrix4fv(mvp_id, instances, GL_TRUE, (float *) mvp.data());
+                int instances= std::min(128, draw.instance_count - i);
                 glUniformMatrix4fv(mv_id, instances, GL_TRUE, (float *) mv.data());
                 
                 glDrawArraysInstanced(GL_TRIANGLES, 0, 6, instances);
-                //~ glDrawArrays(GL_TRIANGLES, 0, 6);
             }
+            
+            ntriangles+= draw.instance_count * 2;// * draw.vertex_count / 3;
         }
     #endif
     
@@ -391,7 +390,7 @@ struct Trace : public App
             printf("\rframe %d    ", m_frame_counter);
         
         if(m_verbose)
-            printf("cpu %.2fms, %d draws, %d programs %d textures %d buffers\n", cpu / 1000, n, nprograms, ntextures, nbuffers);
+            printf("cpu %.2fms, %.2fM triangles %d draws, %d programs %d textures %d buffers\n", cpu / 1000, float(ntriangles) / 1000000, ndraws, nprograms, ntextures, nbuffers);
         
         m_times.push_back(cpu);
         
