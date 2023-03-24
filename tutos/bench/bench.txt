@@ -60,18 +60,18 @@ bin/bench_filter --size $filter -o $prefix/filtered$filter-overdraw-$n.txt -i $p
 done
 
 ## cpu
-bin/bench_trace --frames 1000 -o $prefix/cpu-1.txt --trace bench-data/trace.txt
-bin/bench_trace --frames 1000 -o $prefix/cpu2-1.txt --trace bench-data/trace2.txt
-bin/bench_trace --frames 1000 -o $prefix/cpu3-1.txt --trace bench-data/trace3.txt
-#~ bin/bench_trace --frames 1000 -o $prefix/cpu-1.txt --trace trace.txt
-#~ bin/bench_trace --frames 1000 -o $prefix/cpu2-1.txt --trace trace2.txt
-#~ bin/bench_trace --frames 1000 -o $prefix/cpu3-1.txt --trace trace3.txt
+#~ bin/bench_trace --frames 1000 -o $prefix/cpu-1.txt --trace bench-data/trace.txt
+#~ bin/bench_trace --frames 1000 -o $prefix/cpu2-1.txt --trace bench-data/trace2.txt
+#~ bin/bench_trace --frames 1000 -o $prefix/cpu3-1.txt --trace bench-data/trace3.txt
+bin/bench_trace --frames 1000 -o $prefix/cpu-1.txt --trace tutos/bench/trace.txt
+bin/bench_trace --frames 1000 -o $prefix/cpu2-1.txt --trace tutos/bench/trace2.txt
+bin/bench_trace --frames 1000 -o $prefix/cpu3-1.txt --trace tutos/bench/trace3.txt
 
 
 ## plots
-#~ pprefix="${prefix}/"
+pprefix="${prefix}/"
 #~ pprefix="${prefix}/filtered${filter}-"
-pprefix="${prefix}/filtered-"
+#~ pprefix="${prefix}/filtered-"
 
 # counters
 plots="1 2 3 4 5"
