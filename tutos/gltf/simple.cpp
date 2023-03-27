@@ -1,5 +1,6 @@
 
 #include "gltf.h"
+#include "wavefront.h"
 
 #include "program.h"
 #include "uniforms.h"
@@ -53,14 +54,64 @@ struct GLTF : public AppCamera
     
     int init( )
     {
-        const char *filename= "data/robot.gltf";
+        //~ const char *filename= "data/robot.gltf";
+        //~ const char *filename= "/home/jciehl/Downloads/flying_world_-_battle_of_the_trash_god.glb";
+        const char *filename= "/home/jciehl/scenes/glTF-Sample-Models/2.0/AttenuationTest/glTF-Binary/AttenuationTest.glb";
         
         m_mesh= read_gltf_mesh( filename );
         if(m_mesh.triangle_count() == 0)
             return -1;
         
-        size_t size= m_mesh.vertex_buffer_size() + m_mesh.normal_buffer_size() + m_mesh.index_buffer_size();
-        printf("%dKB\n", int(size / 1024));
+        read_gltf_materials( filename );
+        
+        if(0)
+        {
+            Point pmin, pmax;
+            m_mesh.bounds(pmin, pmax);
+            
+            // normalise les dimensions de l'objet.
+            Vector d= Vector(pmin, pmax);
+            float scale= std::max(d.x, std::max(d.y, d.z));
+            for(int i= 0; i < m_mesh.vertex_count(); i++)
+            {
+                Point p= m_mesh.positions()[i];
+                p.x= 2 * (p.x - pmin.x) / scale -1;
+                p.y= 2 * (p.y - pmin.y) / scale;
+                p.z= 2 * (p.z - pmin.z) / scale -1;
+                
+                m_mesh.vertex(i, p);
+            }
+            
+            write_materials(m_mesh.materials(), "export.mtl");
+            write_mesh(m_mesh, "export.obj", "export.mtl");
+        }
+        
+        //~ size_t size= m_mesh.vertex_buffer_size() + m_mesh.normal_buffer_size() + m_mesh.index_buffer_size();
+        //~ printf("%dKB\n", int(size / 1024));
+        
+        // creer le shader program
+        m_program= read_program("tutos/gltf/simple.glsl");
+        program_print_errors(m_program);
+        if(program_errors(m_program))
+            return -1;
+        
+        // recupere les matieres.
+        // le shader declare un tableau de 64 matieres
+        m_diffuse_colors.resize(64);
+        m_specular_colors.resize(64);
+        m_ns.resize(64);
+        
+        // copier les matieres utilisees
+        const Materials& materials= m_mesh.materials();
+        printf("%d materials\n", materials.count());
+        assert(materials.count() <= int(m_diffuse_colors.size()));
+        
+        for(int i= 0; i < materials.count(); i++)
+        {
+            m_diffuse_colors[i]= materials.material(i).diffuse;
+            m_specular_colors[i]= materials.material(i).specular;
+            m_ns[i]= materials.material(i).ns;
+        }
         
         m_lights= read_gltf_lights( filename );
         printf("%d lights\n", int(m_lights.size()));
@@ -90,12 +141,14 @@ struct GLTF : public AppCamera
         m_repere= make_grid(20);
         
         Point pmin, pmax;
-        m_repere.bounds(pmin, pmax);
+        //~ m_repere.bounds(pmin, pmax);
+        m_mesh.bounds(pmin, pmax);
         
         // parametrer la camera de l'application, renvoyee par la fonction camera()
         camera().lookat(pmin, pmax);
         
         // etat openGL par defaut
+        glEnable(GL_FRAMEBUFFER_SRGB);
         glClearColor(0.2f, 0.2f, 0.2f, 1.f);        // couleur par defaut de la fenetre
         
         glClearDepth(1.f);                          // profondeur par defaut
@@ -115,6 +168,13 @@ struct GLTF : public AppCamera
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
+        if(key_state('r'))
+        {
+            clear_key_state('r');
+            reload_program(m_program, "tutos/gltf/simple.glsl");
+            program_print_errors(m_program);
+        }
+        
         Transform view= camera().view();
         Transform projection= camera().projection();
         
@@ -130,18 +190,33 @@ struct GLTF : public AppCamera
         {
             draw(m_draw_light, Identity(), view, projection);
             
-            //
-            DrawParam params;
-            params.view(view);
-            params.projection(projection);
-            params.model(Identity());
-            params.light( m_lights[0].position, m_lights[0].emission );
+            //~ //
+            //~ DrawParam params;
+            //~ params.view(view);
+            //~ params.projection(projection);
+            //~ params.model(Identity());
+            //~ params.light( m_lights[0].position, m_lights[0].emission );
             
-            draw(m_mesh, params);
+            //~ draw(m_mesh, params);
         }
-        else
+        //~ else
         {
-            draw(m_mesh, Identity(), view, projection);
+            Transform model= Identity();
+            Transform mv= view * model;
+            Transform mvp= projection * mv;
+            
+            glUseProgram(m_program);
+            program_uniform(m_program, "mvpMatrix", mvp);
+            program_uniform(m_program, "mvMatrix", mv);
+            program_uniform(m_program, "up", mv(Vector(0, 1, 0)));
+            
+            program_uniform(m_program, "diffuse_colors", m_diffuse_colors);
+            program_uniform(m_program, "specular_colors", m_specular_colors);
+            program_uniform(m_program, "ns", m_ns);
+            
+            m_mesh.draw(m_program, /* use position */ true, /* use texcoord */ false, /* use normal */ true, /* use color */ false, /* use material index*/ true);
+            
+            //~ draw(m_mesh, Identity(), view, projection);
         }
         
         return 1;
@@ -154,6 +229,11 @@ struct GLTF : public AppCamera
     
     std::vector<GLTFCamera> m_cameras;
     std::vector<GLTFLight> m_lights;
+    
+    GLuint m_program;
+    std::vector<Color> m_diffuse_colors;
+    std::vector<Color> m_specular_colors;
+    std::vector<float> m_ns;
 };
 
 int main( int argc, char **argv )
