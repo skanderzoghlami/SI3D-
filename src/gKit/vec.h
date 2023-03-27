@@ -24,6 +24,7 @@ struct Point
     explicit Point( const float _x, const float _y, const float _z ) : x(_x), y(_y), z(_z) {}
 
     //! cree un point a partir des coordonnees du vecteur generique (v.x, v.y, v.z).
+    Point( const vec2& v, const float z );   // l'implementation se trouve en fin de fichier, la structure vec3 n'est pas encore connue.
     Point( const vec3& v );   // l'implementation se trouve en fin de fichier, la structure vec3 n'est pas encore connue.
     Point( const vec4& v );   // l'implementation se trouve en fin de fichier, la structure vec3 n'est pas encore connue.
     //! cree un point a partir des coordonnes du vecteur (v.x, v.y, v.z).
@@ -187,6 +188,7 @@ struct vec4
 
 
 // implementation des constructeurs explicites.
+inline Point::Point( const vec2& v, const float z ) : x(v.x), y(v.y), z(z) {}
 inline Point::Point( const vec3& v ) : x(v.x), y(v.y), z(v.z) {}
 inline Point::Point( const vec4& v ) : x(v.x), y(v.y), z(v.z) {}
 inline Point::Point( const Vector& v ) : x(v.x), y(v.y), z(v.z) {}

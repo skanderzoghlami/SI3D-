@@ -1,4 +1,5 @@
 
+#include <cmath>
 #include <algorithm>
 
 #include "color.h"
@@ -13,6 +14,19 @@ float Color::max( ) const
 {
     return std::max(r, std::max(g, std::max(b, float(0))));
 }
+
+Color linear( const Color& color )
+{
+    const float g= float(1 / 2.2);
+    return Color(std::pow(color.r, g), std::pow(color.g, g), std::pow(color.b, g), color.a);
+}
+
+Color gamma( const Color& color )
+{
+    const float invg= float(2.2);
+    return Color(std::pow(color.r, invg), std::pow(color.g, invg), std::pow(color.b, invg), color.a);
+}
+
 
 Color Black( )
 {

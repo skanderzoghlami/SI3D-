@@ -49,5 +49,11 @@ Color operator/ ( const Color& a, const Color& b );
 Color operator/ ( const float k, const Color& c );
 Color operator/ ( const Color& c, const float k );
 
+//! correction gamma : srgb vers rgb
+Color linear( const Color& color );
+
+//! correction gamma : rgb vers srgb
+Color gamma( const Color& color );
+
 ///@}
 #endif
