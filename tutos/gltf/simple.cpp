@@ -50,21 +50,21 @@ Mesh make_grid( const int n= 10 )
 
 struct GLTF : public AppCamera
 {
-    GLTF( ) : AppCamera(1024,640, 3,3) {}
+    GLTF( const char *filename ) : AppCamera(1024,640, 3,3) 
+    {
+        m_mesh= read_gltf_mesh( filename );
+        read_gltf_materials( filename );
+        
+        m_cameras= read_gltf_cameras( filename );
+        m_lights= read_gltf_lights( filename );
+    }
     
     int init( )
     {
-        //~ const char *filename= "data/robot.gltf";
-        //~ const char *filename= "/home/jciehl/Downloads/flying_world_-_battle_of_the_trash_god.glb";
-        const char *filename= "/home/jciehl/scenes/glTF-Sample-Models/2.0/AttenuationTest/glTF-Binary/AttenuationTest.glb";
-        
-        m_mesh= read_gltf_mesh( filename );
         if(m_mesh.triangle_count() == 0)
             return -1;
         
-        read_gltf_materials( filename );
-        
-        if(0)
+        if(1)
         {
             Point pmin, pmax;
             m_mesh.bounds(pmin, pmax);
@@ -82,12 +82,9 @@ struct GLTF : public AppCamera
                 m_mesh.vertex(i, p);
             }
             
-            write_materials(m_mesh.materials(), "export.mtl");
-            write_mesh(m_mesh, "export.obj", "export.mtl");
+            //~ write_materials(m_mesh.materials(), "export.mtl");
+            //~ write_mesh(m_mesh, "export.obj", "export.mtl");
         }
-        
-        //~ size_t size= m_mesh.vertex_buffer_size() + m_mesh.normal_buffer_size() + m_mesh.index_buffer_size();
-        //~ printf("%dKB\n", int(size / 1024));
         
         // creer le shader program
         m_program= read_program("tutos/gltf/simple.glsl");
@@ -113,7 +110,7 @@ struct GLTF : public AppCamera
             m_ns[i]= materials.material(i).ns;
         }
         
-        m_lights= read_gltf_lights( filename );
+        //~ m_lights= read_gltf_lights( filename );
         printf("%d lights\n", int(m_lights.size()));
         
         m_draw_light= Mesh(GL_LINES);
@@ -127,7 +124,7 @@ struct GLTF : public AppCamera
             }
         }
         
-        m_cameras= read_gltf_cameras( filename );
+        //~ m_cameras= read_gltf_cameras( filename );
         if(m_cameras.size() > 0)
         {
             m_camera= m_cameras[0];
@@ -141,7 +138,6 @@ struct GLTF : public AppCamera
         m_repere= make_grid(20);
         
         Point pmin, pmax;
-        //~ m_repere.bounds(pmin, pmax);
         m_mesh.bounds(pmin, pmax);
         
         // parametrer la camera de l'application, renvoyee par la fonction camera()
@@ -238,7 +234,10 @@ struct GLTF : public AppCamera
 
 int main( int argc, char **argv )
 {
-    GLTF app;
+    const char *filename= "data/robot.gltf";
+    if(argc > 1) filename= argv[1];
+    
+    GLTF app(filename);
     app.run();
     
     return 0;
