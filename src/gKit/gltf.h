@@ -65,7 +65,9 @@ struct GLTFMaterial
     float ior;                      //!< indice de refraction des dielectriques ou pas (= 0)
     float specular;                 //!< modification de la reflexion speculaire des dielectriques ou pas (= 0)
     Color specular_color;           //!< modification de la reflexion speculaire des dielectriques ou pas (= 0)
-    // \todo volume...;
+    float thickness;                //!< epaisseur des surfaces transparentes
+    float attenuation_distance;     //!< 
+    Color attenuation_color;        //!< 
     // \todo coating
     
     int color_texture;              //!< indice de la texture ou -1. cf read_gltf_images() pour charger les textures dans le bon ordre...
@@ -76,6 +78,7 @@ struct GLTFMaterial
     int transmission_texture;       //!< indice de la texture ou -1.
     int specular_texture;           //!< indice de la texture ou -1.
     int specular_color_texture;     //!< indice de la texture ou -1.
+    int thickness_texture;   
 };
 
 //! charge un fichier .gltf et renvoie les matieres.

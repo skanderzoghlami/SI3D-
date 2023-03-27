@@ -141,12 +141,12 @@ Mesh read_gltf_mesh( const char *filename )
             m.specular= Color(0.04) * (1 - metallic) + color * metallic;
             
             // conversion roughness vers exposant Blinn-Phong
-            m.ns= 2 / (roughness * roughness) - 2;
-            if(m.ns == 0)
+            m.ns= 2 / (roughness * roughness * roughness * roughness) - 2;
+            if(m.ns < float(1.1))
                 m= Material(m.diffuse);
             // les valeurs sont habituellement dans les textures metallic_roughness... utiliser une matiere diffuse + texture...
             
-            //~ printf("  diffuse %f %f %f, specular %f %f %f, ns %f\n", 
+            //~ printf("    | diffuse %f %f %f, specular %f %f %f, ns %f\n", 
                 //~ m.diffuse.r, m.diffuse.g, m.diffuse.b,
                 //~ m.specular.r, m.specular.g, m.specular.b,
                 //~ m.ns);
@@ -498,6 +498,13 @@ std::vector<GLTFMaterial> read_materials( cgltf_data *data )
         m.color= Color(0.8, 0.8, 0.8, 1);
         m.metallic= 0;
         m.roughness= 1;
+        m.transmission= 0;
+        m.ior= 0;
+        m.specular= 0;
+        m.specular_color= Black();
+        m.thickness= 0;
+        m.attenuation_distance= 0;
+        m.attenuation_color= Black();
         m.color_texture= -1;
         m.metallic_roughness_texture= -1;
         m.occlusion_texture= -1;
@@ -506,15 +513,11 @@ std::vector<GLTFMaterial> read_materials( cgltf_data *data )
         m.transmission_texture= -1;
         m.specular_texture= -1;
         m.specular_color_texture= -1;
+        m.thickness_texture= -1;
         
         if(material->has_pbr_metallic_roughness)
         {
             cgltf_pbr_metallic_roughness *pbr= &material->pbr_metallic_roughness;
-            //~ printf("  pbr metallic roughness\n");
-            //~ printf("    base color %f %f %f %f\n", pbr->base_color_factor[0], pbr->base_color_factor[1], pbr->base_color_factor[2], pbr->base_color_factor[3]);
-            //~ printf("      texture %d\n", pbr->base_color_texture.texture ? int(std::distance(data->images, pbr->base_color_texture.texture->image)) : -1);
-            //~ printf("    metallic %f, roughness %f\n", pbr->metallic_factor, pbr->roughness_factor);
-            //~ printf("      texture %d\n", pbr->metallic_roughness_texture.texture ? int(std::distance(data->images, pbr->metallic_roughness_texture.texture->image)) : -1);
             
             m.color= Color(pbr->base_color_factor[0], pbr->base_color_factor[1], pbr->base_color_factor[2], pbr->base_color_factor[3]);
             if(pbr->base_color_texture.texture && pbr->base_color_texture.texture->image)
@@ -524,9 +527,13 @@ std::vector<GLTFMaterial> read_materials( cgltf_data *data )
             m.roughness= pbr->roughness_factor;
             if(pbr->metallic_roughness_texture.texture && pbr->metallic_roughness_texture.texture->image)
                 m.metallic_roughness_texture= int(std::distance(data->images, pbr->metallic_roughness_texture.texture->image));
+                
+            printf("  pbr metallic roughness\n");
+            printf("    base color %f %f %f, texture %d\n", m.color.r, m.color.g, m.color.b, m.color_texture);
+            printf("    metallic %f, roughness %f, texture %d\n", m.metallic, m.roughness, m.metallic_roughness_texture);
         }
-        //~ if(material->has_clearcoat)
-            //~ printf("  clearcoat\n");
+        if(material->has_clearcoat)
+            printf("  clearcoat\n");
         //~ if(material->has_sheen)
             //~ printf("  sheen\n");
         
@@ -551,8 +558,8 @@ std::vector<GLTFMaterial> read_materials( cgltf_data *data )
             if(m.ior == float(1.5))
                 m.ior= 0;       // valeur par defaut
             
-            //~ if(m.ior)
-                //~ printf("  ior %f\n", m.ior);
+            if(m.ior)
+                printf("    ior %f\n", m.ior);
         }
         
         if(material->has_specular)
@@ -572,8 +579,8 @@ std::vector<GLTFMaterial> read_materials( cgltf_data *data )
                 m.specular_color= Black();
             }
             
-            //~ if(m.specular)
-                //~ printf("  specular %f color %f %f %f, texture %d\n", m.specular, m.specular_color.r, m.specular_color.g, m.specular_color.b, m.specular_texture);
+            if(m.specular)
+                printf("    specular %f color %f %f %f, texture %d\n", m.specular, m.specular_color.r, m.specular_color.g, m.specular_color.b, m.specular_texture);
         }
         
         if(material->has_transmission)
@@ -582,14 +589,21 @@ std::vector<GLTFMaterial> read_materials( cgltf_data *data )
             if(material->transmission.transmission_texture.texture && material->transmission.transmission_texture.texture->image)
                 m.transmission_texture= std::distance(data->images, material->transmission.transmission_texture.texture->image);
             
-            //~ if(m.transmission)
-                //~ printf("  transmission %f, texture %d\n", m.transmission, m.transmission_texture);
+            if(m.transmission)
+                printf("    transmission %f, texture %d\n", m.transmission, m.transmission_texture);
         }
         
-        //~ if(material->has_volume) // todo
-        //~ {
-            //~ printf("  volume\n");
-        //~ }
+        if(material->has_volume)
+        {
+            m.thickness= material->volume.thickness_factor;
+            if(material->volume.thickness_texture.texture && material->volume.thickness_texture.texture->image)
+                m.thickness_texture= std::distance(data->images, material->volume.thickness_texture.texture->image);
+            
+            m.attenuation_distance= material->volume.attenuation_distance;
+            m.attenuation_color= Color(material->volume.attenuation_color[0], material->volume.attenuation_color[1], material->volume.attenuation_color[2]);
+            printf("    volume thickness %f, texture %d\n",m.thickness, m.thickness_texture);
+            printf("    volume attenation distance %f, color %f %f %f\n", m.attenuation_distance, m.attenuation_color.r, m.attenuation_color.g, m.attenuation_color.b);
+        }
         
         materials.push_back(m);
     }
