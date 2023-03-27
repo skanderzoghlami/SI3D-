@@ -146,7 +146,7 @@ GLuint compile_shader( const GLuint program, const GLenum shader_type, const std
 }
 
 
-int reload_program( GLuint program, const char *filename, const char *definitions )
+int reload_program( const GLuint program, const char *filename, const char *definitions )
 {
     if(program == 0)
         return -1;
