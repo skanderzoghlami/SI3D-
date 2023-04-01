@@ -7,6 +7,7 @@
 #include "app.h"
 #include "widgets.h"
 
+#include "files.h"
 #include "image.h"
 #include "image_io.h"
 #include "image_hdr.h"
@@ -100,6 +101,8 @@ struct ImageViewer : public App
                 return -1;
             
             m_images.push_back(image);
+            m_times.push_back(timestamp(m_filenames[i]));
+            
             m_textures.push_back(make_texture(0, image));
             
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
@@ -205,6 +208,35 @@ struct ImageViewer : public App
             title(m_index);
         }
         
+        // verification de la date de l'image
+        static float last_time= 0;
+        // quelques fois par seconde, ca suffit, pas tres malin de le faire 60 fois par seconde...
+        if(global_time() > last_time + 400)
+        {
+            size_t time= timestamp(m_filenames[m_index]);
+            if(time != m_times[m_index])
+            {
+                //~ printf("reload image '%s'...\n", m_filenames[m_index]);
+                // date modifiee, recharger l'image
+                m_times[m_index]= time;
+                
+                Image image= read(m_filenames[m_index]);
+                {
+                    m_images[m_index]= image;
+                    
+                    // transfere la nouvelle version
+                    glBindTexture(GL_TEXTURE_2D, m_textures[m_index]);
+                    glTexImage2D(GL_TEXTURE_2D, 0,
+                        GL_RGBA32F, image.width(), image.height(), 0,
+                        GL_RGBA, GL_FLOAT, image.data());
+                    
+                    glGenerateMipmap(GL_TEXTURE_2D);                    
+                }
+            }
+            
+            last_time= global_time();
+        }
+        
         int xmouse, ymouse;
         unsigned int bmouse= SDL_GetMouseState(&xmouse, &ymouse);
         
@@ -296,6 +328,7 @@ struct ImageViewer : public App
                 Image image= read(m_filenames[m_index]);
                 {
                     m_images[m_index]= image;
+                    m_times[m_index]= timestamp(m_filenames[m_index]);
                     
                     // transfere la nouvelle version
                     glBindTexture(GL_TEXTURE_2D, m_textures[m_index]);
@@ -352,6 +385,7 @@ struct ImageViewer : public App
             clear_key_state('w');
             
             m_filenames.erase(m_filenames.begin() + m_index);
+            m_times.erase(m_times.begin() + m_index);
             m_images.erase(m_images.begin() + m_index);
             m_textures.erase(m_textures.begin() + m_index);
             if(m_reference_index == m_index)
@@ -372,10 +406,11 @@ protected:
     Widgets m_widgets;
     
     std::vector<const char *> m_filenames;
+    std::vector<size_t> m_times;
     std::vector<Image> m_images;
     std::vector<GLuint> m_textures;
     int m_width, m_height;
-
+    
     GLuint m_program;
     GLuint m_vao;
     GLuint m_sampler_nearest;
