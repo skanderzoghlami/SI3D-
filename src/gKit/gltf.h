@@ -78,7 +78,13 @@ struct GLTFMaterial
     int transmission_texture;       //!< indice de la texture ou -1.
     int specular_texture;           //!< indice de la texture ou -1.
     int specular_color_texture;     //!< indice de la texture ou -1.
-    int thickness_texture;   
+    int thickness_texture;
+    
+    GLTFMaterial( ) :
+        color(White()), emission(), metallic(), roughness(0.8), transmission(), ior(), specular(), specular_color(), thickness(), attenuation_distance(), attenuation_color(), 
+        color_texture(-1), metallic_roughness_texture(-1), emission_texture(-1), occlusion_texture(-1), normal_texture(-1),
+        transmission_texture(-1), specular_texture(-1), specular_color_texture(-1), thickness_texture(-1)
+    {}
 };
 
 //! charge un fichier .gltf et renvoie les matieres.
