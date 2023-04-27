@@ -1,4 +1,5 @@
 
+#include "files.h"
 #include "gltf.h"
 #include "wavefront.h"
 
@@ -53,17 +54,11 @@ struct GLTF : public AppCamera
     GLTF( const char *filename ) : AppCamera(1024,640, 3,3) 
     {
         m_mesh= read_gltf_mesh( filename );
-        read_gltf_materials( filename );
         
         m_cameras= read_gltf_cameras( filename );
         m_lights= read_gltf_lights( filename );
-    }
-    
-    int init( )
-    {
-        if(m_mesh.triangle_count() == 0)
-            return -1;
         
+	// conversion wavefront / blinn phong + textures
         if(1)
         {
             Point pmin, pmax;
@@ -82,9 +77,27 @@ struct GLTF : public AppCamera
                 m_mesh.vertex(i, p);
             }
             
-            //~ write_materials(m_mesh.materials(), "export.mtl");
-            //~ write_mesh(m_mesh, "export.obj", "export.mtl");
-        }
+            //~ read_gltf_materials( filename );
+            m_images= read_gltf_images( filename );
+            
+            const Materials& materials= m_mesh.materials();
+            int n= materials.filename_count();
+        #pragma omp parallel for
+            for(int i= 0; i < n; i++)
+            {
+                //~ m_images[i]= flipY(m_images[i]);    // gltf origine en haut a gauche vs opengl, en bas a gauche...
+                write_image_data(m_images[i], relative_filename(materials.filename(i), filename).c_str());
+            }
+            
+            write_materials(m_mesh.materials(), "export.mtl", filename);
+            write_mesh(m_mesh, "export.obj", "export.mtl");
+        }        
+    }
+    
+    int init( )
+    {
+        if(m_mesh.triangle_count() == 0)
+            return -1;
         
         // creer le shader program
         m_program= read_program("tutos/gltf/simple.glsl");
@@ -225,6 +238,7 @@ struct GLTF : public AppCamera
     
     std::vector<GLTFCamera> m_cameras;
     std::vector<GLTFLight> m_lights;
+    std::vector<ImageData> m_images;
     
     GLuint m_program;
     std::vector<Color> m_diffuse_colors;

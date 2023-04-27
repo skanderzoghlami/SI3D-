@@ -387,12 +387,14 @@ int write_mesh( const Mesh& mesh, const char *filename, const char *materials_fi
         fprintf(out, "v %f %f %f\n", positions[i].x, positions[i].y, positions[i].z);
     fprintf(out, "\n");
     
+    //~ bool has_texcoords= false;
     const std::vector<vec2>& texcoords= mesh.texcoords();
     bool has_texcoords= (texcoords.size() == positions.size());
     for(unsigned i= 0; i < texcoords.size(); i++)
         fprintf(out, "vt %f %f\n", texcoords[i].x, texcoords[i].y);
     fprintf(out, "\n");
     
+    //~ bool has_normals= false;
     const std::vector<vec3>& normals= mesh.normals();
     bool has_normals= (normals.size() == positions.size());
     for(unsigned i= 0; i < normals.size(); i++)
@@ -413,7 +415,10 @@ int write_mesh( const Mesh& mesh, const char *filename, const char *materials_fi
         {
             material_id= int(materials[i/3]);
             if(material_id != -1)
+            {
+                fprintf(out, "o %s\n", mesh.materials().name(material_id));
                 fprintf(out, "usemtl %s\n", mesh.materials().name(material_id));
+            }
         }
         
         fprintf(out, "f");

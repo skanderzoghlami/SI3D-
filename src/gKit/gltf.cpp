@@ -57,12 +57,18 @@ Mesh read_gltf_mesh( const char *filename )
     {
         if(data->images[i].uri)
         {
-            //~ printf("uri '%s'...\n", data->images[i].uri);
+            printf("texture '%s'...\n", data->images[i].uri);
             materials.insert_texture(data->images[i].uri);
         }
-    #if 0
         else if(data->images[i].buffer_view)
         {
+            //~ cgltf_buffer_view *view= data->images[i].buffer_view;
+            //~ assert(view->buffer->data);
+            //~ printf("  [%u] %s offset %lu size %lu, type '%s'\n", i, data->images[i].name, view->offset, view->size, data->images[i].mime_type);
+            
+            //~ SDL_RWops *read= SDL_RWFromConstMem((uint8_t *) view->buffer->data + view->offset, view->size);
+            //~ assert(read);        
+        
             // extraire la texture du glb...
             
             cgltf_buffer_view *view= data->images[i].buffer_view;
@@ -75,8 +81,12 @@ Mesh read_gltf_mesh( const char *filename )
                 if(data->images[i].name && data->images[i].name[0])
                     sprintf(tmp, "%s%s", pathname(filename).c_str(), data->images[i].name);
                 else
-                    sprintf(tmp, "%stexture%d", pathname(filename).c_str(), i);
+                    sprintf(tmp, "%stexture%d.png", pathname(filename).c_str(), i);
                 
+                printf("packed texture '%s'...\n", tmp);
+                materials.insert_texture(tmp);
+            
+            #if 0
                 if(strcmp(data->images[i].mime_type, "image/png") == 0)
                     strcat(tmp, ".png");
                 else if(strcmp(data->images[i].mime_type, "image/jpg") == 0)
@@ -105,13 +115,13 @@ Mesh read_gltf_mesh( const char *filename )
                 
                 printf("writing flipped texture '%s'...\n", tmp);
                 write_image_data(image, tmp);
-            
+                
                 materials.insert_texture(tmp);
                 assert(data->images[i].uri == nullptr);
                 data->images[i].uri= strdup(tmp);       // nomme la texture / cf analyse des matieres
+            #endif
             }
         }
-    #endif
     }
     
     // materials
@@ -152,7 +162,7 @@ Mesh read_gltf_mesh( const char *filename )
                 //~ m.ns);
             
             if(pbr->base_color_texture.texture && pbr->base_color_texture.texture->image)
-                m.diffuse_texture= materials.find_texture(pbr->base_color_texture.texture->image->uri);
+                m.diffuse_texture= int(std::distance(data->images, pbr->base_color_texture.texture->image));
         }
         
         if(!material->name)
@@ -690,7 +700,7 @@ std::vector<ImageData> read_gltf_images( const char *filename )
     {
         if(data->images[i].uri)
         {
-            printf("[%u] %s\n", i, data->images[i].uri);
+            //~ printf("  [%u] %s\n", i, data->images[i].uri);
             std::string image_filename= pathname(filename) + std::string(data->images[i].uri);
             images[i]= read_image_data(image_filename.c_str());
         }
@@ -699,7 +709,7 @@ std::vector<ImageData> read_gltf_images( const char *filename )
             // extraire l'image du glb...
             cgltf_buffer_view *view= data->images[i].buffer_view;
             assert(view->buffer->data);
-            //~ printf("  [%u] offset %lu size %lu, type '%s'\n", i, view->offset, view->size, data->images[i].mime_type);
+            //~ printf("  [%u] %s offset %lu size %lu, type '%s'\n", i, data->images[i].name, view->offset, view->size, data->images[i].mime_type);
             
             SDL_RWops *read= SDL_RWFromConstMem((uint8_t *) view->buffer->data + view->offset, view->size);
             assert(read);

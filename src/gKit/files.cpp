@@ -107,8 +107,10 @@ std::string normalize_filename( const std::string& filename )
 //~ const char *relative_filename( const std::string& filename, const std::string& path )
 std::string relative_filename( const std::string& filename, const std::string& path )
 {
+    std::string relative= pathname(path);
+    
     unsigned i= 0;
-    while(filename[i] && path[i] && filename[i] == path[i]) 
+    while(filename[i] && relative[i] && filename[i] == relative[i]) 
         i++;
     
     return filename.substr(i);
