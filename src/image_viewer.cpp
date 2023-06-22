@@ -67,6 +67,28 @@ struct ImageViewer : public App
         m_compression= 2.2f;        
     }
     
+    Image tone( const Image& image, const float saturation, const float gamma )
+    {
+        Image tmp(image.width(), image.height());
+        
+        float invg= 1 / gamma;
+        float k= 1 / std::pow(saturation, invg);
+        for(unsigned i= 0; i < image.size(); i++)
+        {
+            Color color= image(i);
+            if(std::isnan(color.r) || std::isnan(color.g) || std::isnan(color.b))
+                // marque les pixels pourris avec une couleur improbable...            
+                color= Color(1, 0, 1);
+            else
+                // sinon transformation gamma rgb -> srgb
+                color= Color(k * std::pow(color.r, invg), k * std::pow(color.g, invg), k * std::pow(color.b, invg));
+            
+            tmp(i)= Color(color, 1);
+        }
+        
+        return tmp;
+    }
+
     void title( const int index )
     {
         char tmp[1024];
@@ -347,6 +369,22 @@ struct ImageViewer : public App
                 else m_reference_index= -1;     // deselectionne la reference
             }
         
+            int export_all= 0;
+            button(m_widgets, "export all", export_all);
+            if(export_all)
+            {
+                #pragma omp parallel for
+                for(unsigned i= 0; i < m_images.size(); i++)
+                {
+                    Image image= tone(m_images[i], m_saturation, m_compression);
+                    
+                    char filename[1024];
+                    sprintf(filename, "%s-tone.png", m_filenames[i]);
+                    printf("exporting '%s'...\n", filename);
+                    write_image(image, filename);
+                }
+            }
+            
         begin_line(m_widgets);
             button(m_widgets, "R", m_red);
             button(m_widgets, "G", m_green);
