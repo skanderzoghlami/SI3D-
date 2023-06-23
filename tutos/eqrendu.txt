@@ -82,6 +82,10 @@ le résultat est plutot simple et facile à retenir :
 \end{eqnarray*}
 \f]
 
+__pour les curieux :__ les détails des calculs sont dans 
+    <a href="https://www.microsoft.com/en-us/research/wp-content/uploads/1996/03/arealights.pdf"> 
+    "Area Light Sources for Real-Time Graphics"</a>, 1996, J.Snyder
+
 <IMG SRC="eqrendu_omega.png" width="60%"> 
 
 ## et pour de vrai ? (avec les ombres)
@@ -103,8 +107,9 @@ intervalle \f$ [a .. b] \f$ en N segments, chaque segment mesure \f$ \frac{1}{N}
 en 2d, pour utiliser la même méthode, il faut découper le domaine d'intégration (un rectangle) en grille de \f$ N \f$ cases. mais on veut intégrer sur \f$ \Omega \f$,
 un dome / une hemisphère / un ensemble de directions... et construire une grille sur un ensemble de directions n'est pas très direct, ni très intuitif.
 
-on peut utiliser une spirale de Fibonacci qui permet de construire l'équivalent d'une grille sur \f$ \Omega \f$ :
-cf <a href="https://ribardiere.pages.xlim.fr/articles/2013/CGF_SF.pdf"> "Spherical Fibonacci Point Sets for Illumination Integrals"</a>
+mais bien sur, il y a une solution : on peut utiliser une spirale de Fibonacci qui permet de construire l'équivalent d'une grille sur \f$ \Omega \f$ :
+    cf <a href="https://ribardiere.pages.xlim.fr/articles/2013/CGF_SF.pdf"> 
+    "Spherical Fibonacci Point Sets for Illumination Integrals"</a>, 2013, R.Marques, C.Bouville, R.Ribardière, L.PSantos, K. Bouatouch.
 
 <IMG SRC="fibo_mapping.png" width="50%"> 
 
@@ -156,12 +161,17 @@ et voila !
 
 avec un code assez direct : 
 \code
+// parametres p, n, material, etc.
+    { ... }
+    
 // lumiere reflechie par p
-    Color color= Black();
+    Color color;        // ou Black();
     for(int i= 0; i < N; i++)
     {
-        Vector f= fibonacci(i, N);
+        Vector f= fibonacci(i, N);                  // genere la ieme direction 
         float V= scene.visible(p + epsilon*n, f);   // renvoie 1, s'il n'y a pas d'intersection
+        
+        // évalue la fonction integrée
         float cos_theta= std::max(0, dot(normalize(n), normalize(f)));
         color= color + material.diffuse / pi * V * emission * cos_theta;
     }
@@ -249,7 +259,7 @@ quand même assez peu adaptée au problème...)
 # bilan
 il va falloir être un peu plus malin pour calculer une image correcte (et en temps raisonnable), bien que cette scène intérieure soit particulièrement simple...
 
-la suite, comment utiliser les probas pour estimer l'équation de rendu de manière plus souple et plus robuste... cf la méthode de Monte Carlo.
+la suite, comment utiliser les probas pour estimer l'équation de rendu de manière plus souple et plus robuste... cf \ref mc
 
 
 */
