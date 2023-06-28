@@ -16,7 +16,7 @@ de sa matière.
 on va commencer par un cas simple : une seule source qui émet de la lumière le long d'une seule direction, un peu comme le soleil.
 c'est la situation habituelle, cf \ref matiere : on a une camera, un point dans la scène, et une direction vers la source de lumière : 
 
-<IMG SRC="source_direction.png" width="40%"> 
+<center> <IMG SRC="source_direction.png" width="40%"> </center>
 
 __qu'est ce que l'on calcule ?__
 \f[ 
@@ -45,7 +45,7 @@ on peut écrire un code simplifié pour réaliser ce calcul :
 
 et voila !
 
-<IMG SRC="eqrendu_sun.png" width="60%"> 
+<center> <IMG SRC="eqrendu_sun.png" width="60%"> </center> 
 
 c'est moche, mais c'est correct. 
 
@@ -58,7 +58,7 @@ comment éclairer les objets par un ciel ? assez intuitivement, on a envi de ref
 falloir _intégrer_ (ou sommer) toute la lumière qui éclaire le point quelque soit sa direction d'incidence. cette formulation s'appelle 
 l'équation du rendu :
 
-<IMG SRC="source_omega.png" width="40%"> 
+<center> <IMG SRC="source_omega.png" width="40%"> </center> 
 
 cette formulation de la synthèse d'images réaliste à été introduite en 1986 par J. Kajiya, cf <a href="https://dl.acm.org/doi/pdf/10.1145/15922.15902"> "The rendering equation"</a>.
 
@@ -86,7 +86,7 @@ __pour les curieux :__ les détails des calculs sont dans
     <a href="https://www.microsoft.com/en-us/research/wp-content/uploads/1996/03/arealights.pdf"> 
     "Area Light Sources for Real-Time Graphics"</a>, 1996, J.Snyder
 
-<IMG SRC="eqrendu_omega.png" width="60%"> 
+<center> <IMG SRC="eqrendu_omega.png" width="60%"> </center> 
 
 ## et pour de vrai ? (avec les ombres)
 
@@ -111,7 +111,7 @@ mais bien sur, il y a une solution : on peut utiliser une spirale de Fibonacci q
     cf <a href="https://ribardiere.pages.xlim.fr/articles/2013/CGF_SF.pdf"> 
     "Spherical Fibonacci Point Sets for Illumination Integrals"</a>, 2013, R.Marques, C.Bouville, R.Ribardière, L.PSantos, K. Bouatouch.
 
-<IMG SRC="fibo_mapping.png" width="50%"> 
+<center> <IMG SRC="fibo_mapping.png" width="50%"> </center> 
 
 pour construire la direction \f$ i \f$ sur \f$ N \f$ :
 \f[ 
@@ -157,7 +157,7 @@ on peut maintenant estimer l'intégrale !
 
 et voila ! 
 
-<IMG SRC="eqrendu_fibonacci-256.png" width="60%"> 
+<center> <IMG SRC="eqrendu_fibonacci-256.png" width="60%"> </center> 
 
 avec un code assez direct : 
 \code
@@ -186,12 +186,14 @@ l'impact sur le résultat est loin d'être négligeable... et sur le temps de ca
 
 voila quelques exemples avec \f$ N= 1, 4, 16, 64 \f$
 
-<table style="width=100%;border=0px">
-<tr><td><IMG SRC="eqrendu_fibonacci-001.png" width="100%"> <td><IMG SRC="eqrendu_fibonacci-004.png" width="100%"></tr>
-<tr><td><IMG SRC="eqrendu_fibonacci-016.png" width="100%"> <td><IMG SRC="eqrendu_fibonacci-064.png" width="100%"> </tr>
-</table>
+<center> 
+	<table style="width=100%;border=0px">
+	<tr><td><IMG SRC="eqrendu_fibonacci-001.png" width="100%"> <td><IMG SRC="eqrendu_fibonacci-004.png" width="100%"></tr>
+	<tr><td><IMG SRC="eqrendu_fibonacci-016.png" width="100%"> <td><IMG SRC="eqrendu_fibonacci-064.png" width="100%"> </tr>
+	</table>
+</center> 
 et  \f$ N= 256 \f$ :
-<IMG SRC="eqrendu_fibonacci-256.png" width="60%"> 
+<center> <IMG SRC="eqrendu_fibonacci-256.png" width="60%"> </center> 
 
 
 __euh c'est toujours moche ?__
@@ -201,12 +203,14 @@ mais on peut casser ces défauts en faisant tourner la spirale sur elle même, d
 mais au lieu d'obtenir une superposition un peu bizarre, on obtient du bruit à la place, ce qui est finalement moins génant. de plus, on pourra 
 filtrer ce bruit si nécessaire, alors que ce serait particulièrement difficile sinon.
 
+<center> 
 <table style="width=100%;border=0px">
 <tr><td><IMG SRC="eqrendu_rfibonacci-001.png" width="100%"> <td><IMG SRC="eqrendu_rfibonacci-004.png" width="100%"> 
 <tr><td><IMG SRC="eqrendu_rfibonacci-016.png" width="100%"> <td><IMG SRC="eqrendu_rfibonacci-064.png" width="100%"> 
 </table>
+</center> 
 et  \f$ N= 256 \f$ :
-<IMG SRC="eqrendu_rfibonacci-256.png" width="60%"> 
+<center> <IMG SRC="eqrendu_rfibonacci-256.png" width="60%"> </center> 
 
 
 ## résumé
@@ -219,23 +223,27 @@ bien sur, toutes les scènes ne sont pas en extérieur et éclairées par le cie
 voila quelques exemples de la fonction intégrée pour un point dans le même exemple. l'image représente une vue de la scène, un rayon, un point de calcul et la vignette
 en bas à gauche est une vue 'fisheye' des objets et des sources visibles par le point (les sources de lumières sont en blanc dans les vignettes)
 
+<center> 
 <table style="width=100%;border=0px">
 <tr>
     <td><IMG SRC="eqrendu_scene-Le-01.png" width="100%"> 
     <td><IMG SRC="eqrendu_scene-Le-02.png" width="100%"> 
 </table>
 <IMG SRC="eqrendu_scene-Le-03.png" width="100%"> 
+</center> 
 
 premier constat, il y a de la lumière partout (ou presque) ! c'est normal, le ciel éclaire la scène... 
 
 et dans une scène intérieure éclairée par une source au plafond :
 
+<center> 
 <table style="width=100%;border=0px">
 <tr>
     <td><IMG SRC="eqrendu_cornell-Le-02.png" width="100%"> 
     <td><IMG SRC="eqrendu_cornell-Le-05.png" width="100%"> 
 </table>
 <IMG SRC="eqrendu_cornell-Le-06.png" width="100%"> 
+</center> 
 
 il y a beaucoup moins de directions qui voient la source... il faut zoomer un peu dans les images, mais les petits points rouges représentent 64 directions de la spirale
 de Fibonacci. en regardant attentivement, on peut constater que la source se trouve souvent entre les directions de la spirale. pour un point plus proche, 
@@ -244,12 +252,14 @@ la source apparaitra plus grande, ou plus petite pour un point plus loin, sur le
 mais dans tous les cas, on peut s'attendre à des résultats assez surprenants ?!
 
 avec \f$ N= 1, 4, 16, 64 \f$
-<table style="width=100%;border=0px">
-<tr><td><IMG SRC="eqrendu_cornell_fibonacci-001.png" width="100%"> <td><IMG SRC="eqrendu_cornell_fibonacci-004.png" width="100%"> 
-<tr><td><IMG SRC="eqrendu_cornell_fibonacci-016.png" width="100%"> <td><IMG SRC="eqrendu_cornell_fibonacci-064.png" width="100%"> 
-</table>
+<center> 
+	<table style="width=100%;border=0px">
+	<tr><td><IMG SRC="eqrendu_cornell_fibonacci-001.png" width="100%"> <td><IMG SRC="eqrendu_cornell_fibonacci-004.png" width="100%"> 
+	<tr><td><IMG SRC="eqrendu_cornell_fibonacci-016.png" width="100%"> <td><IMG SRC="eqrendu_cornell_fibonacci-064.png" width="100%"> 
+	</table>
+</center> 
 et  \f$ N= 256 \f$ :
-<IMG SRC="eqrendu_cornell_fibonacci-256.png" width="60%"> 
+<center> <IMG SRC="eqrendu_cornell_fibonacci-256.png" width="60%"> </center> 
 
 et effectivement, même avec 256 directions, l'image reste pleine de défauts assez surprenants !
 
