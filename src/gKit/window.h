@@ -67,14 +67,17 @@ float delta_time( );
 int run( Window window, int (*draw)( void ) );
 
 int last_event_count( );
-bool laptop_mode( );
-
 
 //! fonction interne de gestion d'evenements.
 int events( Window window );
 
 //! renvoie le chemin(path) vers le fichier 'filename' apres l'avoir cherche dans un repertoire standard...
 const char *smart_path( const char* filename );
+
+//! drag/drop.
+const char *drop_event( );
+//! desactive drag/drop.
+void clear_drop_event( );
 
 ///@}
 #endif
