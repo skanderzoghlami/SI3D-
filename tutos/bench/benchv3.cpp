@@ -29,6 +29,10 @@ extern "C" {
     __declspec(dllexport) unsigned NvOptimusEnablement = 0x00000001;
     __declspec(dllexport) unsigned AmdPowerXpressRequestHighPerformance = 1;
 }
+
+#define DATA_PATH "bench-data/"
+#else
+#define DATA_PATH "tutos/bench/"
 #endif
 
 
@@ -212,19 +216,19 @@ struct Bench : public AppCamera
         }
     #endif
         
-        m_grid_texture= read_texture(0, "data/grid.png");
-        //~ m_grid_texture= read_texture(0, "bench-data/grid.png");
+        // m_grid_texture= read_texture(0, "data/grid.png");
+        m_grid_texture= read_texture(0, DATA_PATH "grid.png");
         
-        m_program_texture= read_program("tutos/bench/vertex2.glsl");
-        //~ m_program_texture= read_program("bench-data/vertex2.glsl");
+        // m_program_texture= read_program("tutos/bench/vertex2.glsl");
+        m_program_texture= read_program(DATA_PATH "vertex2.glsl");
         program_print_errors(m_program_texture);
         
-        m_program_cull= read_program("tutos/bench/vertex_cull.glsl");
-        //~ m_program_cull= read_program("bench-data/vertex_cull.glsl");
+        // m_program_cull= read_program("tutos/bench/vertex_cull.glsl");
+        m_program_cull= read_program(DATA_PATH "vertex_cull.glsl");
         program_print_errors(m_program_cull);
         
-        m_program_rasterizer= read_program("tutos/bench/rasterizer.glsl");
-        //~ m_program_rasterizer= read_program("bench-data/rasterizer.glsl");
+        // m_program_rasterizer= read_program("tutos/bench/rasterizer.glsl");
+        m_program_rasterizer= read_program(DATA_PATH "rasterizer.glsl");
         program_print_errors(m_program_rasterizer);
         
         if(program_errors(m_program_texture) || program_errors(m_program_cull) || program_errors(m_program_rasterizer))
@@ -298,7 +302,7 @@ struct Bench : public AppCamera
                 time+= m_time_stats[i];
                 
                 fprintf(out, "%f ; %f ; %f ; %f ; %f\n", 
-                    m_time_stats[i],     // 1 time
+                    m_time_stats[i],    // 1 time
                     m_bench1_stats[i],  // 2 discard
                     m_bench2_stats[i],  // 3 rasterizer
                     m_bench3_stats[i],  // 4 cull
