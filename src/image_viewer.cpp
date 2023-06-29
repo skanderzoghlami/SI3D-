@@ -413,7 +413,7 @@ struct ImageViewer : public App
                     Image image= tone(m_images[i], m_saturation, m_compression);
                     
                     char filename[1024];
-                    sprintf(filename, "%s-tone.png", m_filenames[i]);
+                    sprintf(filename, "%s-tone.png", m_filenames[i].c_str());
                     printf("exporting '%s'...\n", filename);
                     write_image(image, filename);
                 }
