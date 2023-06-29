@@ -120,9 +120,9 @@ int main( const int argc, const char **argv )
                 Point pc= primitives.positions[c];
                 
                 // transforme les sommets dans le repere de la scene
-                pa= model( Point(pa) );
-                pb= model( Point(pb) );
-                pc= model( Point(pc) );
+                pa= model( pa );
+                pb= model( pb );
+                pc= model( pc );
                 
                 triangles.push_back( Triangle(pa, pb, pc, mesh_id, primitive_id, i/3) );
             }
