@@ -254,7 +254,7 @@ int write_image_data( ImageData& image, const char *filename )
         Uint8 a= 255;
         if(image.channels > 3)
             a= image.pixels[offset +3];
-
+        
         flip[p]= r;
         flip[p +1]= g;
         flip[p +2]= b;
