@@ -73,15 +73,30 @@ void clear_text_event( )
     last_text.text[0]= 0;
 }
 
-static std::string last_drop;
+static std::vector<std::string> last_drops;
+const std::vector<std::string>& drop_events( )
+{
+    return last_drops;
+}
+
 const char *drop_event( )
 {
-    return last_drop.c_str();
+    if(last_drops.empty())
+        return nullptr;
+    else
+        return last_drops.back().c_str();
 }
+
 void clear_drop_event( )
 {
-    last_drop.clear();
+    last_drops.clear();
 }
+
+void clear_drop_events( )
+{
+    last_drops.clear();
+}
+
 
 static SDL_MouseButtonEvent last_button;
 SDL_MouseButtonEvent button_event( )
@@ -176,7 +191,8 @@ int events( Window window )
                 break;
             
             case SDL_DROPFILE:
-                last_drop.assign(event.drop.file);
+                //~ printf("drop file '%s'\n", event.drop.file);
+                last_drops.push_back(std::string(event.drop.file));
                 SDL_free(event.drop.file);
                 break;
             

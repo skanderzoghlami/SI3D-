@@ -2,6 +2,8 @@
 #ifndef _WINDOW_H
 #define _WINDOW_H
 
+#include <string>
+#include <vector>
 
 #include <SDL2/SDL.h>
 
@@ -74,10 +76,14 @@ int events( Window window );
 //! renvoie le chemin(path) vers le fichier 'filename' apres l'avoir cherche dans un repertoire standard...
 const char *smart_path( const char* filename );
 
-//! drag/drop.
+//! drag/drop, renvoie le dernier fichier.
 const char *drop_event( );
 //! desactive drag/drop.
 void clear_drop_event( );
+//! drag/drop. recupere tous les fichiers.
+const std::vector<std::string>& drop_events( );
+//! desactive drag/drop.
+void clear_drop_events( );
 
 ///@}
 #endif

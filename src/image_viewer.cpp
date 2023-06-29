@@ -264,24 +264,26 @@ struct ImageViewer : public App
             last_time= global_time();
         }
         
-        if(drop_event())
+        if(drop_events().size())
         {
-            const char *filename= drop_event();
-            assert(filename);
-            if(filename[0])
+            for(unsigned i= 0; i < drop_events().size(); i++)
             {
-                printf("drop file '%s'...\n", filename);
-                
-                Image image= read(filename);
-                if(image.size())
+                const char *filename= drop_events()[i].c_str();
+                if(filename && filename[0])
                 {
-                    m_images.push_back( image );
-                    m_filenames.push_back( filename );
-                    m_times.push_back( timestamp(filename) );
-                    m_textures.push_back( make_texture(0, image) );
+                    //~ printf("drop file [%d] '%s'...\n", int(m_filenames.size()), filename);
                     
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+                    Image image= read(filename);
+                    if(image.size())
+                    {
+                        m_images.push_back( image );
+                        m_filenames.push_back( filename );
+                        m_times.push_back( timestamp(filename) );
+                        m_textures.push_back( make_texture(0, image) );
+                        
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+                    }
                 }
                 
                 printf("index %d\n", m_index);
@@ -289,7 +291,8 @@ struct ImageViewer : public App
                     printf("images[%d] '%s'\n", i, m_filenames[i].c_str());
             }
             
-            clear_drop_event();
+            clear_drop_events();
+            assert(drop_events().size() == 0);
         }
         
         
