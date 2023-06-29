@@ -80,7 +80,7 @@ Quelles sont les coordonnées d'un pixel dans le repère \f$ Image \f$ ? On conn
 sur le plan proche du frustum de la camera et z = 1 sur le plan far du frustum. repassez dans le cours d'intro sur les transformations si ce n'est pas 
 clair.
 
-<IMG SRC="repere_rayon.png" width="35%"> 
+<center> <IMG SRC="repere_rayon.png" width="40%"> </center> 
 
 Résultat, on peut calculer les coordonnées de 2 points sur le rayon : x, y sur le plan near (z = 0), et x, y sur le plan far (z = 1) :
 \f[
@@ -134,7 +134,7 @@ __attention :__
 Les calculs d'intersection qui sont décrits juste après se font avec la droite infinie qui porte le rayon. Lorsque le calcul trouve une ou plusieurs intersections,
 il faut vérifier qu'elles se trouvent dans l'intervalle \f$ [0 .. t_{max}] \f$ du rayon. La droite infinie peut toucher un objet, mais pas nécessairement le rayon.
 
-<IMG SRC="intersection_rayon.png" width="35%"> 
+<center> <IMG SRC="intersection_rayon.png" width="30%"> </center> 
 
 
 ## plan
@@ -156,7 +156,7 @@ les 2 propriétés en même temps :
 \vec{n} \cdot \vec{a p(t)} = 0
 \f]
 
-<IMG SRC="ray_plane.png" width="25%"> 
+<center> <IMG SRC="ray_plane.png" width="25%"> </center> 
 
 _rappel :_ \f$ p(t) = o + t\vec{d} \f$ désigne un point du rayon.
 
@@ -197,12 +197,12 @@ ci-dessus :
     - \f$ plan( c + \vec{j}, \vec{j} ) \f$, \f$ plan(c - \vec{j}, \vec{j}) \f$
     - \f$ plan( c + \vec{k}, \vec{k} ) \f$, \f$ plan(c - \vec{k}, \vec{k}) \f$
 
-<IMG SRC="cube.png" width="20%"> 
+<center> <IMG SRC="cube.png" width="20%"> </center> 
 
 Pour calculer l'intersection avec le cube, il faut calculer ces 3 intervalles (un par paire de plans / par axe) et vérifier que les intervalles se chevauchent : que 
 leur intersection n'est pas vide. 
 
-<IMG SRC="ray_cube.png" width="30%"> 
+<center> <IMG SRC="ray_cube.png" width="30%"> </center> 
 
 Il y a aura une intersection si \f$ [t_{min_i} .. t_{max_i}] \cap [t_{min_j} .. t_{max_j}] \cap [t_{min_k} .. t_{max_k}] \cap [0 .. t_{max}] \neq \phi \f$
 
@@ -264,25 +264,25 @@ centre :
 
 _rappel :_ on a utilisé une relation entre le produit scalaire et (le carré de) la longueur du vecteur : \f$ \vec{u} \cdot \vec{u} = |u|^2 \f$
 
-<IMG SRC="ray_sphere.png" width="25%"> 
+<center> <IMG SRC="ray_sphere.png" width="25%"> </center> 
 
 il ne reste plus qu'à trouver la valeur de \f$ t \f$ pour que \f$ p(t) \f$, le point sur le rayon soit aussi sur la sphère :
 \f[
 \begin{eqnarray*}
-(p(t) - c) \cdot (p(t) -  c) - r^2 & = & 0\\
-(o + t\vec{d} - c) \cdot (o + t\vec{d} -  c) - r^2 & = & 0\\
-((o - c) + t\vec{d}) \cdot ((o - c) + t\vec{d}) - r^2 & = & 0\\
-(\vec{d} \cdot \vec{d}) t^2 + 2\vec{d} \cdot (o - c) t + (o - c) \cdot (o - c) - r^2 & = & 0\\
+	(p(t) - c) \cdot (p(t) -  c) - r^2 & = & 0\\
+	(o + t\vec{d} - c) \cdot (o + t\vec{d} -  c) - r^2 & = & 0\\
+	((o - c) + t\vec{d}) \cdot ((o - c) + t\vec{d}) - r^2 & = & 0\\
+	(\vec{d} \cdot \vec{d}) t^2 + 2\vec{d} \cdot (o - c) t + (o - c) \cdot (o - c) - r^2 & = & 0\\
 \end{eqnarray*}
 \f]
 
 il faut relire attentivement ce résultat, mais il est sous une forme assez simple au final :
 \f[
 \begin{eqnarray*}
-a t^2 + b t + k & = & 0\\
-a & = & \vec{d} \cdot \vec{d}\\
-b & = & 2\vec{d} \cdot (o - c)\\
-k & = & (o - c) \cdot (o - c) - r^2 
+	a t^2 + b t + k & = & 0\\
+	a & = & \vec{d} \cdot \vec{d}\\
+	b & = & 2\vec{d} \cdot (o - c)\\
+	k & = & (o - c) \cdot (o - c) - r^2 
 \end{eqnarray*}
 \f]
 
@@ -293,8 +293,8 @@ ou la traverser en 2 points.
 si \f$ b^2 - 4ak > 0 \f$, les solutions s'écrivent :
 \f[
 \begin{eqnarray*}
-t_1 & = & \frac{-b + \sqrt{b^2 - 4ak}}{2a}\\
-t_2 & = & \frac{-b - \sqrt{b^2 - 4ak}}{2a}\\
+	t_1 & = & \frac{-b + \sqrt{b^2 - 4ak}}{2a}\\
+	t_2 & = & \frac{-b - \sqrt{b^2 - 4ak}}{2a}\\
 \end{eqnarray*}
 \f]
 
@@ -316,24 +316,24 @@ rasterization / fragmentation, mais surtout pour pouvoir interpoler les attibuts
 
 du coup, on peut représenter un point dans le plan du triangle \f$ abc \f$ à l'aide des coordonnées barycentriques : 
 \f[
-p(\alpha, \beta, \gamma) = \alpha a + \beta b + \gamma c
+	p(\alpha, \beta, \gamma) = \alpha a + \beta b + \gamma c
 \f]
 
-<IMG SRC="triangle_uvw.png" width="30%"> 
+<center> <IMG SRC="triangle_uvw.png" width="35%"> </center> 
 
 mais les points à l'intérieur du triangle vérifient quelques propriétés supplémentaires :
 \f[
 \begin{eqnarray*}
-\alpha & >= & 0\\
-\beta & >= & 0\\
-\gamma & >= & 0\\
-\alpha + \beta + \gamma & =& 1
+	\alpha & \geq & 0 \mbox{ et }\alpha \leq 1\\
+	\beta & \geq & 0 \mbox{ et }\beta \leq 1\\
+	\gamma & \geq & 0 \mbox{ et }\gamma \leq 1\\
+	\alpha + \beta + \gamma & =& 1
 \end{eqnarray*}
 \f]
 
 \f$ \alpha \f$ peut être recalculée en fonction des 2 autres : \f$ \alpha= 1 - \beta - \gamma \f$ et on utilise la forme simplifiée :
 \f[ 
-p(\beta, \gamma) = (1 - \beta - \gamma) a + \beta b + \gamma c
+	p(\beta, \gamma) = (1 - \beta - \gamma) a + \beta b + \gamma c
 \f]
 
 __remarque :__ il existe plusieurs conventions pour cette simplification, n'importe laquelle des 3 peut etre calculée implicitement.
@@ -348,7 +348,7 @@ il ne reste plus qu'à écrire qu'un point doit être en même temps sur le rayo
 \end{eqnarray*}
 \f]
 
-<IMG SRC="ray_triangle.png" width="30%"> 
+<center> <IMG SRC="ray_triangle.png" width="35%"> </center> 
 
 on obtient un système linéaire, 3 équations et 3 inconnues (\f$ t, \beta, \gamma \f$), une solution élégante n'utilisant que des produits scalaires 
 et vectoriels est proposée dans cet article : 
@@ -468,7 +468,7 @@ if(hit)
 
 le sommet \f$ a \f$ des triangles apparait en rouge, le sommet \f$ b \f$ en vert et le sommet \f$ c \f$ en bleu...
 
-<IMG SRC="rt_uvw.png" width="50%"> 
+<center> <IMG SRC="rt_uvw.png" width="50%"> </center> 
 
 ## matière diffuse, source de lumière, et lumière réfléchie...
 
@@ -560,14 +560,14 @@ if(hit)
 
 et voila :
 
-<IMG SRC="rt_diffuse.png" width="50%"> 
+<center> <IMG SRC="rt_diffuse.png" width="50%"> </center> 
 
 il ne reste plus qu'à ajouter les ombres...
 
 _indication :_ il suffit de construire un rayon entre p et s, le point sur la source, et de vérifier qu'il n'y a __pas__ d'intersection entre eux, pour que la 
 lumière arrive au point p, sinon p est à l'ombre...
 
-<IMG SRC="rt_shadow.png" width="50%"> 
+<center> <IMG SRC="rt_shadow.png" width="50%"> </center> 
 
 ## et alors ?
 
