@@ -413,3 +413,16 @@ ImageData downscale( const ImageData& image )
     return mip;
 }
 
+Image downscale( const Image& image )
+{
+    Image mip(std::max(1, image.width()/2), std::max(1, image.height()/2));
+    
+    for(int y= 0; y < mip.height(); y++)
+    for(int x= 0; x < mip.width(); x++)
+        mip(x, y)= (image(2*x, 2*y) + image(2*x+1, 2*y)
+            + image(2*x, 2*y+1) + image(2*x+1, 2*y+1)) / 4;
+    
+    return mip;
+}
+
+

@@ -68,7 +68,11 @@ ImageData flipX( const ImageData& image );
 //! renvoie un bloc de l'image
 ImageData copy( const ImageData& image, const int xmin, const int ymin, const int width, const int height );
 
+//! renvoie une image filtree plus petite.
 ImageData downscale( const ImageData& image );
+
+//! renvoie une image filtree plus petite.
+Image downscale( const Image& image );
 
 ///@}
 

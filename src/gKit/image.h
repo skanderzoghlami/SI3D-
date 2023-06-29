@@ -48,13 +48,13 @@ public:
         return m_pixels[offset(x, y)];
     }
     
-    Color& operator() ( const size_t offset )
+    Color& operator() ( const unsigned offset )
     {
         assert(offset < m_pixels.size());
         return m_pixels[offset];
     }
     
-    Color operator() ( const size_t offset ) const
+    Color operator() ( const unsigned offset ) const
     {
         assert(offset < m_pixels.size());
         return m_pixels[offset];
@@ -99,10 +99,10 @@ public:
     //! renvoie la hauteur de l'image.
     int height( ) const { return m_height; }
     //! renvoie le nombre de pixels de l'image.
-    std::size_t size( ) const { return m_width * m_height; }
+    unsigned size( ) const { return m_width * m_height; }
     
     //! renvoie l'indice du pixel.
-    unsigned int offset (const int x, const int y ) const
+    unsigned offset( const int x, const int y ) const
     {
         int px= x;
         if(px < 0) px= 0;
