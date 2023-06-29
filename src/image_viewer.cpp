@@ -19,7 +19,11 @@
 
 struct ImageViewer : public App
 {
-    ImageViewer( std::vector<const char *>& _filenames ) : App(1024, 640), m_filenames(_filenames) {}
+    ImageViewer( std::vector<const char *>& filenames ) : App(1024, 640), m_filenames() 
+    {
+        for(unsigned i= 0; i < filenames.size(); i++)
+            m_filenames.push_back(filenames[i]);
+    }
     
     void range( const Image& image )
     {
@@ -70,7 +74,7 @@ struct ImageViewer : public App
     void title( const int index )
     {
         char tmp[1024];
-        sprintf(tmp, "buffer %02d: %s", index, m_filenames[index]);
+        sprintf(tmp, "buffer %02d: %s", index, m_filenames[index].c_str());
         SDL_SetWindowTitle(m_window, tmp);        
     }
     
@@ -92,22 +96,22 @@ struct ImageViewer : public App
         m_width= 0;
         m_height= 0;
         
-        for(int i= 0; i < int(m_filenames.size()); i++)
+        for(unsigned i= 0; i < m_filenames.size(); i++)
         {
-            printf("loading buffer %d...\n", i);
+            printf("loading buffer %u...\n", i);
             
-            Image image= read(m_filenames[i]);
+            Image image= read(m_filenames[i].c_str());
             if(image.size() == 0)
                 return -1;
             
             m_images.push_back(image);
-            m_times.push_back(timestamp(m_filenames[i]));
+            m_times.push_back(timestamp(m_filenames[i].c_str()));
             
             m_textures.push_back(make_texture(0, image));
             
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-
+            
             m_width= std::max(m_width, image.width());
             m_height= std::max(m_height, image.height());
         }
@@ -213,15 +217,16 @@ struct ImageViewer : public App
         // quelques fois par seconde, ca suffit, pas tres malin de le faire 60 fois par seconde...
         if(global_time() > last_time + 400)
         {
-            size_t time= timestamp(m_filenames[m_index]);
+            size_t time= timestamp(m_filenames[m_index].c_str());
             if(time != m_times[m_index])
             {
-                //~ printf("reload image '%s'...\n", m_filenames[m_index]);
                 // date modifiee, recharger l'image
-                m_times[m_index]= time;
+                printf("reload image '%s'...\n", m_filenames[m_index].c_str());
                 
-                Image image= read(m_filenames[m_index]);
+                Image image= read(m_filenames[m_index].c_str());
+                if(image.size())
                 {
+                    m_times[m_index]= time;
                     m_images[m_index]= image;
                     
                     // transfere la nouvelle version
@@ -230,12 +235,41 @@ struct ImageViewer : public App
                         GL_RGBA32F, image.width(), image.height(), 0,
                         GL_RGBA, GL_FLOAT, image.data());
                     
-                    glGenerateMipmap(GL_TEXTURE_2D);                    
+                    glGenerateMipmap(GL_TEXTURE_2D);
                 }
             }
             
             last_time= global_time();
         }
+        
+        if(drop_event())
+        {
+            const char *filename= drop_event();
+            assert(filename);
+            if(filename[0])
+            {
+                printf("drop file '%s'...\n", filename);
+                
+                Image image= read(filename);
+                if(image.size())
+                {
+                    m_images.push_back( image );
+                    m_filenames.push_back( filename );
+                    m_times.push_back( timestamp(filename) );
+                    m_textures.push_back( make_texture(0, image) );
+                    
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+                }
+                
+                printf("index %d\n", m_index);
+                for(unsigned i= 0; i < m_filenames.size(); i++)
+                    printf("images[%d] '%s'\n", i, m_filenames[i].c_str());
+            }
+            
+            clear_drop_event();
+        }
+        
         
         int xmouse, ymouse;
         unsigned int bmouse= SDL_GetMouseState(&xmouse, &ymouse);
@@ -325,10 +359,10 @@ struct ImageViewer : public App
             button(m_widgets, "reload", reload);
             if(reload)
             {
-                Image image= read(m_filenames[m_index]);
+                Image image= read(m_filenames[m_index].c_str());
                 {
                     m_images[m_index]= image;
-                    m_times[m_index]= timestamp(m_filenames[m_index]);
+                    m_times[m_index]= timestamp(m_filenames[m_index].c_str());
                     
                     // transfere la nouvelle version
                     glBindTexture(GL_TEXTURE_2D, m_textures[m_index]);
@@ -348,6 +382,16 @@ struct ImageViewer : public App
             }
         
         begin_line(m_widgets);
+        {
+            int px= xmouse;
+            int py= window_height() - ymouse -1;
+            float x= px / float(window_width()) * m_images[m_index].width();
+            float y= py / float(window_height()) * m_images[m_index].height();
+            Color pixel= m_images[m_index](x, y);
+            label(m_widgets, "pixel %d %d: %f %f %f", int(x), int(y), pixel.r, pixel.g, pixel.b);
+        }
+
+        begin_line(m_widgets);
             button(m_widgets, "R", m_red);
             button(m_widgets, "G", m_green);
             button(m_widgets, "B", m_blue);
@@ -357,16 +401,23 @@ struct ImageViewer : public App
             
             if(m_reference_index != -1)
                 button(m_widgets, "diff to reference", m_difference);
-            
+        
         begin_line(m_widgets);
         {
-            int px= xmouse;
-            int py= window_height() - ymouse -1;
-            float x= px / float(window_width()) * m_images[m_index].width();
-            float y= py / float(window_height()) * m_images[m_index].height();
-            Color pixel= m_images[m_index](x, y);
-            label(m_widgets, "pixel %d %d: %f %f %f", int(x), int(y), pixel.r, pixel.g, pixel.b);
+            static int list= 0;
+            button(m_widgets, "select image...", list);
+            if(list)
+            {
+                char tmp[1024];
+                for(unsigned i= 0; i < m_filenames.size(); i++)
+                {
+                    begin_line(m_widgets);
+                    sprintf(tmp, "[%u] %s", i, m_filenames[i].c_str());
+                    select(m_widgets, tmp, i, m_index);
+                }
+            }
         }
+        
         end(m_widgets);
         
         draw(m_widgets, window_width(), window_height());
@@ -405,7 +456,7 @@ struct ImageViewer : public App
 protected:
     Widgets m_widgets;
     
-    std::vector<const char *> m_filenames;
+    std::vector<std::string> m_filenames;
     std::vector<size_t> m_times;
     std::vector<Image> m_images;
     std::vector<GLuint> m_textures;
