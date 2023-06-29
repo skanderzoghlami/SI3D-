@@ -648,6 +648,20 @@ protected:
 int main( int argc, char **argv )
 {
     std::vector<const char *> options(argv+1, argv+argc);
+    
+#ifdef WIN32
+    // force, ou pas, l'utilisation d'un gpu dedie / integre...
+    bool igpu= option_flag_or("--igpu", false, options);
+    if(igpu)
+    {
+        // a tester...
+        printf("use iGPU...\n");
+        
+        NvOptimusEnablement = 0;
+        AmdPowerXpressRequestHighPerformance = 0;
+    }
+#endif
+
     Bench app( options );
     
     app.run();
