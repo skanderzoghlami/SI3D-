@@ -4,7 +4,6 @@
 #include <chrono>
 
 #include "app.h"
-#include "app_time.h"
 #include "app_camera.h"
 #include "widgets.h"
 
@@ -36,7 +35,7 @@ extern "C" {
 #endif
 
 
-const int MAX_FRAMES= 6;
+const int MAX_FRAMES= 6;    // attention !! deja defini dan app_time
 
 
 unsigned options_find( const char *name, const std::vector<const char *>& options )
@@ -138,7 +137,6 @@ struct Bench : public AppCamera
         m_lights= option_value_or("--lights", 1, options);
         printf("lights %d\n", m_lights);
         
-        //~ m_use_rotation= option_or("--rotation", false, options);
         m_use_rotation= option_value_or("--rotation", false, options);
         printf("rotation %d\n", m_use_rotation);
         
@@ -216,18 +214,14 @@ struct Bench : public AppCamera
         }
     #endif
         
-        // m_grid_texture= read_texture(0, "data/grid.png");
         m_grid_texture= read_texture(0, DATA_PATH "grid.png");
         
-        // m_program_texture= read_program("tutos/bench/vertex2.glsl");
         m_program_texture= read_program(DATA_PATH "vertex2.glsl");
         program_print_errors(m_program_texture);
         
-        // m_program_cull= read_program("tutos/bench/vertex_cull.glsl");
         m_program_cull= read_program(DATA_PATH "vertex_cull.glsl");
         program_print_errors(m_program_cull);
         
-        // m_program_rasterizer= read_program("tutos/bench/rasterizer.glsl");
         m_program_rasterizer= read_program(DATA_PATH "rasterizer.glsl");
         program_print_errors(m_program_rasterizer);
         
