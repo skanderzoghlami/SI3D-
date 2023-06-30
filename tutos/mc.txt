@@ -185,11 +185,11 @@ __ce qu'il faut retenir :__ une variable aléatoire, ou plutot les _valeurs poss
 probabilité \f$ p(x) \f$ et la fonction de répartition \f$ P(x) \f$ (qui est définie à partir de la densité). si la densité de proba est importante pour 
 certaines valeurs, ces valeurs seront plus 'probables' ou plus souvent observées lors de \f$ N \f$ réalisations / tirages.
 
-## échantillons / tirages, variable aléatoire et densité de probabilité...
+## générer un point avec une densité de probabilité...
 
 il manque une dernière étape pour estimer l'intégrale d'une fonction avec un estimateur Monte Carlo...
 
-_comment choisir les points en fonction de  p(x) ?_
+_comment générer les points en fonction de p(x) ?_
 
 on sait choisir des points uniformément sur un intervalle [a .. b] avec une densité constante en utilisant un générateur de nombre pseudo-aléatoire
 standard qui permet d'obtenir des nombres aléatoires entre 0 et 1. il suffit d'étirer et de déplacer l'intervalle [0 .. 1] vers l'intervalle [a .. b]
@@ -214,11 +214,15 @@ standard qui permet d'obtenir des nombres aléatoires entre 0 et 1. il suffit d'
     }
 \endcode
 
+voila 1000 points générés de cette manière. chaque point est dessiné sur une ligne différente, sinon on aurait juste une seule ligne, 
+vu qu'il y a des points dans tout l'intervalle...
+<center> <IMG SRC="uniform_points.png" width="60%"> </center>
+
 mais si la densité n'est pas constante ? comme dans l'exemple au dessus, ie \f$ p(x)= \frac{2}{b-a} \frac{b-x}{b-a}\f$ ?
 
 on va commencer par un cas plus simple en 2 étapes : 
     - choisir dans quelle moitiée de l'intervalle [a .. b] placer un point, soit [a .. m] soit [m .. b]
-    - et ensuite choisir le point dans l'intervalle sélectionné, avec une densité uniforme.
+    - et ensuite choisir le point dans l'intervalle sélectionné, avec une densité uniforme, comme on vient de le faire pour [a .. b].
 
 _comment choisir un intervalle ?_ une solution simple serait de choisir l'indice de l'intervalle aléatoirement, ie tirer un nombre aléatoire entre 1 et 2, 
 puis de placer un point uniformement dans cet intervalle. mais bien sur, c'est la même chose que le choix uniforme, chaque intervalle va être sélectionné
@@ -238,16 +242,39 @@ soit pour les 2 intervalles :
     - \f$ P(2)=  p(1) + p(2) = \frac{3}{4}+ \frac{1}{4}= 1\f$
 
 on sélectionne l'intervalle 1 si \f$ u \f$ vérifie \f$ u \leq P(1) \f$ ou l'intervalle 2 si \f$ u \leq P(2) \f$.
+ce qui s'écrit directement : 
+\code
+	float u= uniform( rng ); // nombre aleatoire uniforme entre 0 et 1
+
+	// choisir un intervalle
+	if(u < float(3)/float(4))
+	{
+		// intervalle 1
+	}
+	else if(u < 1)
+	{
+		// intervalle 2
+	}
+\endcode
 
 de manière générale, une valeur \f$ x_i \f$ est selectionnée si \f$ u \f$ vérifie :
 \f[
 \begin{eqnarray*}
-P(x_{i-1}) & \leq & u \leq P(x_{i})\\
-\sum_{j=1}^{i-1} p(x_j) & \leq & u \leq \sum_{j=1}^{i} p(x_j)
+	P(x_{i-1}) & \leq & u \leq P(x_{i})\\
+	\sum_{j=1}^{i-1} p(x_j) & \leq & u \leq \sum_{j=1}^{i} p(x_j)
 \end{eqnarray*}
 \f]
 
-on peut maintenant finir le tirage / la génération d'un point, le plus difficile était de choisir les intervalles en respectant leurs densités.
+ou schématiquement, en partant de l'histogramme (ou de la densité de proba) :
+
+<center> <IMG SRC="pdf.png" width="25%"> </center> 
+
+on cherche à quelle valeur de la variable aléatoire correspond \f$ u \f$ en parcourant la fonction de répartition :
+
+<center> <IMG SRC="cdf_inverse.png" width="30%"> </center> 
+
+on peut maintenant finir le tirage / la génération d'un point, le plus difficile était de choisir les intervalles en respectant leur probabilité.
+une fois un intervalle sélectionné, il suffit de générer un point uniformément à l'intérieur :
 \code
     // intervalle [a .. b]
     const float a= ...;
@@ -281,18 +308,76 @@ on peut maintenant finir le tirage / la génération d'un point, le plus diffici
     }
 \endcode
 
-mais dernière subtilité, cette solution ne génère pas des points avec la densité \f$ p(x)= \frac{2}{b-a} \frac{b-x}{b-a}\f$... mais avec celle-ci :
+mais dernière subtilité, les points sont distribués selon le produit de 2 densités, d'abord choisir un intervalle puis choisir un point dans 
+cet intervalle :
     - \f$ p(x)= \frac{3}{4} \frac{1}{(m-a)}\f$, si \f$ x \in [a, m]\f$,
     - \f$ p(x)= \frac{1}{4} \frac{1}{(b-m)}\f$, si \f$ x \in [m, b]\f$.
 
-de manière plus formelle, on vient d'inverser la fonction de répartition de la variable aléatoire, \f$ x_i= P^{-1}(u) \f$ et cette notion va permettre
-de faire la même chose avec des variables aléatoires continues. l'essentiel est de comprendre que l'on peut transformer un nombre uniforme entre 
-0 et 1 en valeur d'une variable aléatoire tout en respectant sa densité de proba... 
+voila à quoi ressemblent 1000 points :
+<center> <IMG SRC="half_points.png" width="60%"> </center> 
+
+on observe bien la séparation entre les 2 intervalles. 
 
 
+_pour les curieux :_ on peut aussi vérifier le comportement de l'estimateur Monte Carlo en fonction de la manière de générer les points : 
+<center>
+	<table style="width=100%;border=0px">
+		<tr><td><IMG SRC="mc_cos_uniform.png" width="100%"> <td><IMG SRC="mc_cos_interval.png" width="100%"></tr>
+	</table>
+</center>
 
-# précision et Monte Carlo
+à gauche, avec les points générés aléatoirement et uniformément sur l'intervalle [a .. b], ie la 1ère solution, et à droite les points générés sur les 2 moitiés.
 
+
+__et alors ?__ de manière plus formelle, on vient d'inverser la fonction de répartition de la variable aléatoire, \f$ x_i= P^{-1}(u_i) \f$ et cette notion 
+va permettre de faire la même chose avec des variables aléatoires continues. l'essentiel est de comprendre que l'on peut transformer un nombre 
+uniforme entre 0 et 1 en valeur d'une variable aléatoire tout en respectant sa densité de proba... 
+
+
+## générer des points avec une densité de proba continue...
+
+on vient de voir que l'on peut générer des points assez facilement pour une variable aléatoire discrète en parcourant l'histogramme cumulé. on pourrait
+bien sur faire la même chose avec une variable continue, ie la découper en n morceaux, construire un histogramme, puis un histogramme cumulé et 
+rechercher quelle valeur correspond à un nombre aléatoire uniforme entre 0 et 1... mais dans certains cas, on peut le faire directement, mais ca représente
+quelques calculs... 
+
+si on reprend l'idée d'utiliser \f$ p(x)= \frac{2}{b-a} \frac{b-x}{b-a}\f$, que faut-il faire ? l'idée est la même que pour une variable discrète, comme rappelé
+juste au-dessus : connaissant la densité de proba \f$ p(x) \f$, il faut l'intégrer pour obtenir la fonction de répartition \f$ P(x) \f$ et 
+enfin l'inverser \f$ x= P^{-1}(u) \f$ pour générer un point \f$ x \f$ en fonction de \f$ u \f$.
+
+1ère étape : calculer \f$ P(x) \f$, la fonction de répartition. par définition, on a :
+\f[
+	P(x)= \int_a^x p(t) dt = \int_a^x \frac{2}{b-a} \frac{b-t}{b-a} dt = \frac{(a-x) \, (x - 2b + a)}{(b-a)^2}
+\f]
+
+2ième étape : inversion, ie trouver l'expression de \f$ x \f$ en fonction de \f$ u \f$, on cherche les racines de \f$ P(x) - u = 0\f$ :
+\f[
+\begin{eqnarray*}
+	x_1& = & b - \sqrt{(1 - u)(b-a)^2}\\
+	x_2& = & b + \sqrt{(1 - u)(b-a)^2}
+\end{eqnarray*}
+\f]
+
+ah, comment ça on a plusieurs solutions ? vu que l'on ne s'interresse qu'aux valeurs de x dans l'intervalle [a .. b], on peut éliminer \f$ x_2 \f$ qui sera 
+toujours plus grande que b (_pourquoi ?_ on sait qu'une racine est toujours > 0, du coup b + racine est plus grand que b)
+
+_remarque :_ on peut utiliser une calculatrice en ligne pour faire les calculs, comme celle de 
+<a href="https://www.wolframalpha.com/examples/mathematics/calculus-and-analysis/integrals"> wolfram </a> par exemple.
+
+et ça marche ? 
+<center> <IMG SRC="cdf_points.png" width="60%"> </center>
+
+on peut également vérifier que l'on ne s'est pas trompé, en utilisant les points pour estimer l'intégrale : 
+<center> <IMG SRC="mc_cos_linear.png" width="60%"> </center> 
+
+l'estimateur converge vers la même valeur qu'avec les points aléatoires uniformes ou ceux générés par intervalles, donc on ne s'est pas trompé. par 
+contre, on remarque que les estimations sont plus proches les unes des autres et que l'estimateur converge un peu plus vite...
+
+pour terminer, il faut aussi remarquer qu'il y a assez peu de fonctions que l'on peut manipuler comme ça (intégration puis inversion) pour générer 
+directement des points selon la fonction de répartition. et les calculs ne sont pas toujours simples, mais il existe des catalogues de fonctions / recettes 
+de cuisine...
+
+_pour les malins :_ oui, tout ça ne sert à rien pour intégrer \f$ cos x \f$... on sait faire le calcul directement, c'est un exemple 1d comme un autre. 
 
 
 */
