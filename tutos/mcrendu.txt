@@ -1,0 +1,23 @@
+
+
+/*! \addtogroup mcrendu Monte Carlo et équation de rendu
+
+    on vient de voir dans \ref eqrendu que l'on a besoin d'estimer l'intégrale d'une fonction pour calculer la lumière réfléchie par un point de la scène. 
+et qu'une méthode assez proche de l'intégration par rectangles n'est pas tout à fait adaptée au problème... mais qu'il existe une autre 
+méthode : \ref mc. par contre, les exemples précédents d'intégration avec Monte Carlo n'etaient qu'en une seule dimension. 
+comment utiliser Monte Carlo pour intégrer l'équation de rendu ?
+
+c'est à dire comment utiliser ça :
+\f[
+\begin{eqnarray*}
+    I &= &\int f(x)\, dx\\
+    I &\approx &\frac{1}{N} \sum_i^N \frac{f(x_i)}{p(x_i)}
+\end{eqnarray*}
+\f]
+
+pour calculer ça : 
+\f[ 
+    L_r(p, \vec{o})= \int_{\Omega} \frac{k}{\pi} V(\vec{l}) L_i(p, \vec{l}) \cos \theta dl
+\f]
+
+*/
