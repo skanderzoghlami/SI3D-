@@ -11,6 +11,8 @@
 
 //! \addtogroup application
 
+const int MAX_FRAMES= 6;
+
 //! \file
 //! classe application, avec mesure integree du temps d'execution cpu et gpu.
 class AppTime : public App
@@ -37,8 +39,12 @@ protected:
 
     std::chrono::high_resolution_clock::time_point m_cpu_start;
     std::chrono::high_resolution_clock::time_point m_cpu_stop;
+    
+    GLuint m_time_query[MAX_FRAMES];
+    GLint64 m_frame_time;
+    int m_frame;
+    
     Text m_console;
-    GLuint m_time_query;
 };
 
 
