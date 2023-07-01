@@ -104,7 +104,7 @@ faire une infinité de calculs, il reste donc toujours une imprécision dans le 
 on vient de voir rapidement à quoi ressemble un estimateur Monte Carlo, le principe est le même quelque soit la fonction et le domaine d'intégration (un intervalle 1d,
 un carre 2d, une hemisphère de directions, etc). on part de la fomulation de l'intégrale à évaluer :
 \f[
-    I = \int f(x) dx
+    I = \int f(x) \, dx
 \f]
 
 et on peut écrire l'estimateur :
@@ -134,7 +134,7 @@ l'intervalle, au lieu de placer le même nombre de points partout. on voudrait u
 comme \f$ x \f$ ne varie pas entre 0 et 1 mais entre a et b, il faut plutot quelque chose comme \f$ \frac{b-x}{b-a}\f$, mais une densité de proba doit 
 être normalisée (par définition) :
 \f[
-    \int p(x)dx= 1
+    \int p(x) \, dx= 1
 \f]
 
 il faut faire le calcul pour vérifier : \f$ \int_a^b \frac{b-x}{b-a} dx= \frac{b-a}{2}\f$ et pas vraiment 1... mais il suffit de diviser par ce résultat pour 
@@ -244,24 +244,24 @@ soit pour les 2 intervalles :
 on sélectionne l'intervalle 1 si \f$ u \f$ vérifie \f$ u \leq P(1) \f$ ou l'intervalle 2 si \f$ u \leq P(2) \f$.
 ce qui s'écrit directement : 
 \code
-	float u= uniform( rng ); // nombre aleatoire uniforme entre 0 et 1
+    float u= uniform( rng ); // nombre aleatoire uniforme entre 0 et 1
 
-	// choisir un intervalle
-	if(u < float(3)/float(4))
-	{
-		// intervalle 1
-	}
-	else if(u < 1)
-	{
-		// intervalle 2
-	}
+    // choisir un intervalle
+    if(u < float(3)/float(4))
+    {
+        // intervalle 1
+    }
+    else if(u < 1)
+    {
+        // intervalle 2
+    }
 \endcode
 
 de manière générale, une valeur \f$ x_i \f$ est selectionnée si \f$ u \f$ vérifie :
 \f[
 \begin{eqnarray*}
-	P(x_{i-1}) & \leq & u \leq P(x_{i})\\
-	\sum_{j=1}^{i-1} p(x_j) & \leq & u \leq \sum_{j=1}^{i} p(x_j)
+    P(x_{i-1}) & \leq & u \leq P(x_{i})\\
+    \sum_{j=1}^{i-1} p(x_j) & \leq & u \leq \sum_{j=1}^{i} p(x_j)
 \end{eqnarray*}
 \f]
 
@@ -321,9 +321,9 @@ on observe bien la séparation entre les 2 intervalles.
 
 _pour les curieux :_ on peut aussi vérifier le comportement de l'estimateur Monte Carlo en fonction de la manière de générer les points : 
 <center>
-	<table style="width=100%;border=0px">
-		<tr><td><IMG SRC="mc_cos_uniform.png" width="100%"> <td><IMG SRC="mc_cos_interval.png" width="100%"></tr>
-	</table>
+    <table style="width=100%;border=0px">
+        <tr><td><IMG SRC="mc_cos_uniform.png" width="100%"> <td><IMG SRC="mc_cos_interval.png" width="100%"></tr>
+    </table>
 </center>
 
 à gauche, avec les points générés aléatoirement et uniformément sur l'intervalle [a .. b], ie la 1ère solution, et à droite les points générés sur les 2 moitiés.
@@ -347,14 +347,14 @@ enfin l'inverser \f$ x= P^{-1}(u) \f$ pour générer un point \f$ x \f$ en fonct
 
 1ère étape : calculer \f$ P(x) \f$, la fonction de répartition. par définition, on a :
 \f[
-	P(x)= \int_a^x p(t) dt = \int_a^x \frac{2}{b-a} \frac{b-t}{b-a} dt = \frac{(a-x) \, (x - 2b + a)}{(b-a)^2}
+    P(x)= \int_a^x p(t) \, dt = \int_a^x \frac{2}{b-a} \frac{b-t}{b-a} \, dt = \frac{(a-x) \, (x - 2b + a)}{(b-a)^2}
 \f]
 
 2ième étape : inversion, ie trouver l'expression de \f$ x \f$ en fonction de \f$ u \f$, on cherche les racines de \f$ P(x) - u = 0\f$ :
 \f[
 \begin{eqnarray*}
-	x_1& = & b - \sqrt{(1 - u)(b-a)^2}\\
-	x_2& = & b + \sqrt{(1 - u)(b-a)^2}
+    x_1& = & b - \sqrt{(1 - u)(b-a)^2}\\
+    x_2& = & b + \sqrt{(1 - u)(b-a)^2}
 \end{eqnarray*}
 \f]
 
@@ -367,11 +367,44 @@ _remarque :_ on peut utiliser une calculatrice en ligne pour faire les calculs, 
 et ça marche ? 
 <center> <IMG SRC="cdf_points.png" width="60%"> </center>
 
-on peut également vérifier que l'on ne s'est pas trompé, en utilisant les points pour estimer l'intégrale : 
+on observe bien que les points sont distribués progressivement dans l'intervalle, au contraire de la solution précédente.
+
+on peut également vérifier que l'on ne s'est pas trompé, en utilisant les points pour estimer l'intégrale. le code est sans surprise : 
+
+\code
+#include <random>
+ 
+const int N= ... ;
+ 
+// initialisation generateur aleatoire std c++
+std::random_device hwseed;
+std::default_random_engine rng( hwseed() );
+std::uniform_real_distribution<float> uniform(0, 1);
+ 
+float I= 0;
+for(int i= 0; i < N; i++)
+{
+    float u= uniform( rng );                    // nombre aléatoire entre 0 et 1
+
+    const float a= 0;                           // intervalle [a .. b]
+    const float b= float(M_PI/2);               // ou radians(90)...
+    
+    float xi= b - std::sqrt((1-u) * (b-a)*(b-a));
+    float pdf_xi= 2/(b-a) * (b-xi)/(b-a);
+    
+    float cos_xi= std::cos( xi );               // evaluer la fonction à intégrer
+    
+    I= I + cos_xi / pdf_xi;                     // estimateur Monte Carlo
+}
+I= I / float(N);                                // et on oublie pas de finir le calcul...
+\endcode
+
+et voila le résultat pour \f$ N \f$ variant de 1 à 1M :
 <center> <IMG SRC="mc_cos_linear.png" width="60%"> </center> 
 
-l'estimateur converge vers la même valeur qu'avec les points aléatoires uniformes ou ceux générés par intervalles, donc on ne s'est pas trompé. par 
-contre, on remarque que les estimations sont plus proches les unes des autres et que l'estimateur converge un peu plus vite...
+l'estimateur converge vers la même valeur qu'avec les points aléatoires uniformes ou ceux générés par intervalles, donc on ne s'est pas trompé,
+ni pour générer les points, ni pour évaluer leur densité de proba. par contre, on remarque que les estimations sont plus proches les unes des autres et 
+que l'estimateur converge un peu plus vite...
 
 pour terminer, il faut aussi remarquer qu'il y a assez peu de fonctions que l'on peut manipuler comme ça (intégration puis inversion) pour générer 
 directement des points selon la fonction de répartition. et les calculs ne sont pas toujours simples, mais il existe des catalogues de fonctions / recettes 
