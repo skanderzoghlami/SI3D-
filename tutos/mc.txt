@@ -410,7 +410,18 @@ pour terminer, il faut aussi remarquer qu'il y a assez peu de fonctions que l'on
 directement des points selon la fonction de répartition. et les calculs ne sont pas toujours simples, mais il existe des catalogues de fonctions / recettes 
 de cuisine...
 
-_pour les malins :_ oui, tout ça ne sert à rien pour intégrer \f$ cos x \f$... on sait faire le calcul directement, c'est un exemple 1d comme un autre. 
+_pour les malins :_ oui, tout ça ne sert à rien pour intégrer \f$ \cos \f$... on sait faire le calcul directement, c'est un exemple 1d comme un autre. mais 
+peut-on faire un truc plus interressant comme utiliser \f$ \cos \f$ pour densité de proba ? et peut-on également générer des points en fonction de cette densité ?
+quel serait l'impact sur la convergence de l'estimateur ?
 
+# bilan
+
+on vient de voir plusieurs choses : la définition de l'intégration Monte Carlo, l'utilisation d'une variable aléatoire, la génération des points (ou des
+_échantillons_ de manière générale, on va aussi générer des directions dans pas longtemps) en fonction de plusieurs densités de proba : uniforme, (semi-) discrète, 
+et continue et que cette densité de proba des échantillons semble avoir un impact sur la convergence de l'estimateur.... mais avant de regarder cette propriété 
+plus en détail, on va voir comment appliquer tout ça à l'équation de rendu... mais il va falloir manipuler des variables aléatoires 2d, pour générer des 
+directions, par exemple (ou autre chose...).
+
+la suite dans \ref mcrendu.
 
 */
