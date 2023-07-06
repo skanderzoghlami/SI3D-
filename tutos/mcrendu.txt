@@ -62,6 +62,7 @@ et voila, on peut calculer une image maintenant, avec \f$ N = 64 \f$ par exemple
         <tr><td><IMG SRC="mcrendu_uniform-064.png" width="100%"> <td><IMG SRC="mcrendu_fibonacci-064.png" width="100%"></tr>
     </table>
 </center>
+(à gauche l'intégration Monte Carlo, à droite l'intégration avec une spirale de Fibonacci)
 
 mais ce n'est pas très différent de ce que l'on peut obtenir avec une spirale de Fibonacci orientée différemment pour chaque pixel... alors pourquoi ?
 
@@ -120,6 +121,14 @@ au résultat, il n'y a pas de raison de passer du temps à intégrer numériquem
 
 __ok, c'est peut etre interressant...__ mais il faut encore finir le calcul et pouvoir générer des points \f$ q \f$ aléatoirement sur les sources de lumière... 
 
+on commence par écrire l'estimateur Monte Carlo avec la densité de proba de la variable \f$ q \f$ :
+\f[
+\begin{eqnarray*}
+    L_r(p, o) &= & L_e(p, o) + \int_{S} \frac{k}{\pi} V(p, q) L_i(p, q) \cos \theta_p \frac{\cos \theta_q}{||\vec{pq}||^2} \, dq\\
+        &\approx & L_e(p, o) + \frac{1}{N} \sum_j^N \frac{k}{\pi} V(p, q_j) L_i(p, q_j) \cos \theta_p \frac{\cos \theta_{q_j}}{||\vec{pq_j}||^2} \, \frac{1}{p(q_j)}
+\end{eqnarray*}
+\f]
+
 on va commencer par un cas simple : on suppose qu'il n'y a qu'une source de lumière et que c'est un carré. quelle densité de proba peut-on utiliser ? par exemple, une densité
 uniforme, ie \f$ p(q)= \frac{1}{aire} \f$. on va utiliser 2 variables aléatoires, une pour choisir une position dans la longueur du carré, et une autre pour la hauteur, on utilise 2 fois le
 choix d'un point dans un intervalle (cf \ref mc), la densité de q est le produit des 2 : \f$ p(q) = \frac{1}{largeur}\frac{1}{hauteur} = \frac{1}{aire}\f$
@@ -151,20 +160,31 @@ c'est un poil mieux non ? pour comparer, les résultats précédents avec \f$ N 
     </table>
 </center>
 
-même si les différentes étapes semblent bizarres et compliquées, ie utiliser Monte Carlo, les densités de proba, leur inversion, la reformulation 
+même si les différentes étapes semblent bizarres et un peu compliquées, ie utiliser Monte Carlo, les densités de proba, leur inversion, la reformulation 
 du problème, etc. on arrive à un résultat nettement plus convaincant qu'avec la première intégration numérique... et c'est aussi beaucoup plus rapide à calculer !!
 
-
-# éclairage direct
-et s'il y a plusieurs sources ? on va d'abord choisir une source parmi les sources existantes puis un point sur la source sélectionnée. la densité de proba est un produit : 
-p(q) = 1 / n * 1 / aire
-
-# éclairage direct uniforme
-et s'il y a des grandes sources et des petites ? on va choisir une source en fonction de son aire par rapport aux autres en construisant une variable aléatoire discrète, en 
-calculant sa fonction de répartition et en la parcourant, comme le choix d'un intervalle dans \ref mc. p(q) = aire(source) / aire(\sum source) * 1 / aire(source)= 1 / aire(\sum sources)
-
-# et si les sources sont des triangles ? 
-
 # bilan
+
+_pourquoi utiliser des trucs aussi compliqués pour calculer une image ?_ tout simplement parce que ce sont les bons outils pour formuler le problème, ie le calcul que l'on veut
+faire et estimer un résultat correct. 
+
+_pourquoi une intégrale ?_ il faut demander aux physiciens / opticiens... mais le résultat n'est pas si surprenant lorsque l'on veut éclairer une 
+scène avec autre chose qu'un point ou une direction... 
+
+et _pourquoi Monte Carlo ?_ probablement parce que c'est la méthode la plus souple et la plus robuste pour calculer tout ça, 
+même s'il est nécessaire de faire beaucoup de calculs, dans certains cas, pour obtenir une image propre et sans défauts. l'industrie n'utilise plus que cette solution pour produire
+les films d'animation et les effets spéciaux. 
+par exemple : 
+    - Hyperyon / Disney : <a href= "https://www.yiningkarlli.com/projects/hyperiondesign/hyperiondesign.pdf"> "The Design and Evolution of Disney’s Hyperion Renderer"</a>,
+    - Renderman / Pixar : <a href="https://graphics.pixar.com/library/RendermanTog2018/paper.pdf"> "RenderMan: An Advanced Path Tracing Architecture for Movie Rendering"</a>.
+
+vous pouvez faire une soirée Toy story (par exemple) pour constater l'évolution de la qualité du rendu entre 1995 (Toy story 1) et 2010 (Toy Story 3) 
+qui sont produits avec les méthodes classiques (ie le pipeline REYES) et comparer aux solutions plus récentes : 2019 (Toy Story 4) et 2022 (Buzz Lightyear) qui utilisent du lancer de 
+rayons et de l'intégration Monte Carlo (ainsi que des modèles de matières réalistes de plus en plus détaillés)... 
+
+un peu de lecture sur les méthodes précédentes :
+    - REYES : un pipeline de fragmentation / rasterization, à peine plus général que celui utilisé par une carte graphique moderne,\n
+    cf <a href= "https://graphics.pixar.com/library/Reyes/paper.pdf"> "the Reyes image rendering architecture"</a>, Pixar, 1987,
+    - approximation de l'éclairage global : cf <a href="https://www.tabellion.org/et/paper11/OutOfCorePBGI.pdf"> "Coherent Out-of-Core Point-Based Global Illumination"</a>, Dreamworks, 2011.
 
 */

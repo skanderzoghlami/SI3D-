@@ -77,6 +77,8 @@ et ceux dédiés à la synthèse d'images réaliste :
     - \ref eqrendu, 
     - \ref mc,
     - \ref mcrendu,
+	- \ref mcdirect,
+	- \ref mcdirect_code
     
 et un utilitaire pour jouer avec les shaders, \ref shader_kit.cpp \ref shader_kit.
 

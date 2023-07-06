@@ -1,0 +1,343 @@
+
+/*! \addtogroup mcdirect_code Monte Carlo, éclairage direct : structurer le code
+
+il est de temps d'écrire un peu de code pour tester tout ça. la structure générale va ressembler au code de départ de \ref intrort :
+    - charger une scène,
+    - extraire les triangles et leurs matières, éventuellement construire un BVH pour accélérer les intersections rayons / scène, cf \ref sah,
+    - extraire les triangles dont la matière émet de la lumière, ie les sources de lumière,
+    - charger une camera.
+
+on peut charger des objets stockés dans un fichier .obj (cf read_mesh() ou read_positions() ou read_meshio_data()) ou .gltf (cf read_gltf_scene()). les données de ces fichiers
+sont organisées différemment, et c'est une assez bonne idée de cacher ce détail dans une structure Scene pour éviter de rendre le reste du code dépendant 
+du format de fichier...
+\code
+struct Scene
+{
+    // intersections avec les triangles des objets
+    Hit intersect( const Point& p, const Vector& l ) const; 
+    bool visible( const Point& p, const Point& q ) const;   // pratique pour les ombres...
+    
+    // normale interpolée d'une intersection
+    Vector normal( const Hit& ) const;
+    // matière d'une intersection
+    const Material& material( const Hit& ) const;
+    
+    // sources de lumière
+    const std::vector<Source>& sources( ) const;
+};
+\endcode
+
+au final, on va écrire une fonction qui parcourt tous les pixels de l'image, génère un rayon et utilise un estimateur Monte Carlo pour calculer la 
+couleur du pixel. par exemple :
+\code
+Image render( const int width, const int height, const Orbiter& camera, const Scene& scene, const int N )
+{
+    Image image(width, height);
+    
+    // transformations pour générer les rayons
+    Transform view= camera.view();
+    Transform projection= camera.projection();
+    Transform viewport= Viewport(image.width(), image.height());
+    
+    // passage repere image vers monde
+    Transform T= Inverse(viewport * projection * view);
+
+#pragma omp parallel for schedule(dynamic, 1)
+    for(int py= 0; py < image.height(); py++)
+    {
+        for(int px= 0; px < image.width(); px++)
+        {
+            // générer le rayon pour le pixel (px, py)
+            Point o= T( Point(px, py, 0) );
+            Point e= T( Point(px, py, 1) );
+            Vector d= Vector(o, e);
+            
+            Color emission= Black();
+            Color color= Black();
+            
+            // trouver l'intersection dans la direction d
+            if(Hit hit= scene.intersect(o, d))
+            {
+                // recuperer la position du point, sa normale et sa matiere
+                Point p= o + hit.t * d;
+                Vector pn= scene.normal(hit);
+                const Material& pmaterial= scene.material(hit);
+                
+                // emission du triangle, s'il est orienté vers la camera
+                // suppose que les normales des sources sont correctes...
+                if(dot(d, pn) < 0)
+                    emission= emission + pmaterial.emission;
+                
+                // les objets 3d sont pleins de défauts, surtout l'orientation des normales...
+                // retourne la normale si elle n'est pas orientee vers la camera
+                if(dot(d, pn) > 0)
+                    pn= -pn;
+                
+                // couleur du pixel
+                color= { ... };
+            }
+            
+            image(px, py)= Color(emission + color, 1); // forcer une couleur opaque dans l'image...
+        }
+    }
+    return image;
+}
+\endcode
+
+la ligne `#pragma omp ...` permet d'utiliser tous les coeurs de calcul du processeur pour calculer plus rapidement, cf \ref acceleration.
+
+il ne manque plus que la partie Monte Calo... on va avoir besoin de générer des nombres aléatoires entre 0 et 1, au minimum :
+\code
+// initialisation generateur aleatoire std c++
+std::random_device hwseed;
+std::default_random_engine rng( hwseed() );
+
+// distribution uniform entre 0 et 1
+std::uniform_real_distribution<float> uniform(0, 1);
+
+// génère un nombre aléatoire uniforme entre 0 et 1
+float u= uniform( rng );
+...
+\endcode
+
+mais il faut manipuler à la fois le générateur et la distribution, ce qui n'est pas toujours très pratique. il suffit de les regrouper dans une structure :
+\code
+struct Sampler
+{
+    std::default_random_engine rng;
+    std::uniform_real_distribution<float> uniform;
+    
+    // initialiser une sequence aléatoire.
+    Sampler( const unsigned seed ) : rng( seed ), uniform(0, 1) {}
+    
+    // renvoyer un réel entre 0 et 1.
+    float sample( ) { return uniform( rng ); }
+    
+    // renvoyer un entier entre 0 et n.
+    int sample_range( const int n ) { return sample() * n; }
+};
+\endcode
+
+dernière subtilité, le code de rendu est multi-threadé et les threads ne doivent pas modifier les mêmes variables simultanément, par exemple 
+les générateurs aléatoires. le plus simple, dans ce cas, est tout simplement de créer un générateur local, ou privé pour chaque thread :
+\code
+#pragma omp parallel for schedule(dynamic, 1)
+    for(int py= 0; py < image.height(); py++)
+    {
+        // créer un générateur privé pour le thread qui calcule la ligne py
+        std::random_device hwseed;
+        Sampler rng( hwseed() );
+        
+        for(int px= 0; px < image.width(); px++)
+        {
+            ...
+        }
+    }
+\endcode
+
+et le code Monte Carlo, ie l'évaluation de la couleur du pixel aura toujours la même forme :
+\code
+#pragma omp parallel for schedule(dynamic, 1)
+    for(int py= 0; py < image.height(); py++)
+    {
+        // créer un générateur privé pour le thread qui calcule la ligne py
+        std::random_device hwseed;
+        Sampler rng( hwseed() );
+        
+        for(int px= 0; px < image.width(); px++)
+        {
+            ...
+			
+			// couleur du pixel
+			color= Black();
+			
+			// estimateur Monte Carlo avec N échantillons
+			for(int i= 0; i < N; i++)
+			{
+				// generer un échantillon (point ou direction...)
+				float u= rng.sample();
+				...
+				
+				// evaluer la densite de proba de l'échantillon
+				float pdf= { ... };
+				
+				// evaluer la fonction pour l'echantillon
+				Color f= { ... };
+				
+				// et accumuler l'evaluation de la fonction dans l'estimateur
+				color= color + f / pdf;
+			}
+			color= color / float(N);
+        }
+		
+		image(px, py)= Color(emission + color, 1); // forcer une couleur opaque dans l'image...
+    }
+\endcode
+
+# éclairage ambiant
+
+pour évaluer l'éclairage ambiant, la scène éclairée par un ciel uniforme, on utilise la formulation sur les directions de l'équation de rendu, et 
+son estimateur, cf \ref mcrendu :
+\f[
+\begin{eqnarray*}
+    L_r(p, \vec{o}) &= & \int_{\Omega} \frac{k}{\pi} V(p, \vec{l}) L_i(p, \vec{l}) \cos \theta \, dl\\
+              &\approx & \frac{1}{N} \sum_j^N \frac{k}{\pi} V(p, \vec{l_j}) L_i(p, \vec{l_j}) \cos \theta \frac{1}{p(\vec{l_j})}
+\end{eqnarray*}
+\f]
+
+on va utiliser des directions générées selon la densité :
+\f[
+\begin{eqnarray*}
+    p(\vec{l})&= & \frac{1}{2\pi}\\
+  \cos \theta &= & u_1\\
+         \phi &= & 2\pi \, u_2\\
+      \vec{l} &= & ( \cos \phi \sin \theta, \, \sin \phi \sin \theta, \, \cos \theta)\\
+    \mbox{avec }\sin \theta &= & \sqrt{1 - \cos \theta \cos \theta}
+\end{eqnarray*}
+\f]
+
+c'est assez direct en ré-utilisant les fragments de code précédents : 
+\code
+	
+    const float epsilon= 0.001;
+    
+    // estimateur avec N directions
+    color= Black();
+    for(int i= 0; i < N; i++)
+    {
+        // genere une direction p(l)= 1 / (2pi)
+        Vector l;
+        float pdf;
+        {
+            float cos_theta= rng.sample();
+            float sin_theta= std::sqrt(1 - cos_theta * cos_theta);
+            float phi= float(2*M_PI) * rng.sample();
+            
+            // construit les composantes de la direction l
+            // l= Vector(std::cos(phi) * sin_theta, std::sin(phi) * sin_theta, cos_theta);
+			// dans un repere local... il manque une transformation vers la scène...
+            
+            // evalue la pdf
+            pdf= 1 / (2*M_PI);
+        }
+        
+        // verifie la visibilité de la lumière / du ciel dans la direction l
+        if(scene.intersect(p + epsilon*pn, l) == false)
+        {
+            // pas d'intersection dans la direction l, V(p, l) = 1
+            // il ne reste plus qu'à évaluer les autres termes de la fonction à integrer...
+            
+            Color Li= Color(1);
+            Color brdf= pmaterial.color / float(M_PI);
+            float cos_theta= std::max(float(0), dot( normalize(pn), normalize(l) ));
+			
+			// et l'estimateur...
+            color= color + brdf * Li * cos_theta / pdf;
+        }
+    }
+    color= color / float(N);
+\endcode
+
+mais il reste un problème : la direction aléatoire \f$ \vec{l} \f$ est construite dans un repère local, il faut la transformer dans le repère de la scène... 
+la construction de la variable aléatoire utilise une convention : l'axe Z est aligné sur la normale à la surface, pour construire un changement de repère 
+il faut connaitre 3 axes, on n'en connait qu'un seul...
+
+_indication :_ si on connaissait la normale \f$ \vec{n} \f$ et une autre direction \f$ \vec{d} \f$, non alignée avec la normale, il suffirait de 2 produits vectoriels 
+pour construire 2 autres vecteurs orthogonaux à la normale : \f$ \vec{x} = \vec{d} \times \vec{n} \f$, puis \f$ \vec{y}= \vec{n} \times \vec{x} \f$ 
+avec \f$ \vec{z}= \vec{n} \f$, ce qui définit une base xyz et permet de transformer la direction \f$ \vec{l} \f$ vers la scène.
+
+il faut se rappeler la définition des coordonnées d'un vecteur dans une base : ie \f$ x= \vec{v} \cdot \vec{x} \ldots \f$ et qu'un vecteur s'exprime comme
+la somme de ses projections sur les axes de la base : \f$ \vec{v}= x \, \vec{x} + y \, \vec{y} + z \, \vec{z}\f$. du coup \f$ l_x \, \vec{x} + l_y \, \vec{y} + l_z \, \vec{z}\f$ 
+correspond bien à la direction \f$ \vec{l} \f$ dans le repère de la scène.
+
+on peut essayer de construire une direction non alignée avec \f$ \vec{n} \f$ en modifiant ses coordonnées, mais ca n'est pas toujours très robuste.
+par contre, il existe une construction complètement différente à base de quaternions qui est de plus rapide : cf \n
+<a href="http://people.compute.dtu.dk/jerf/papers/abstracts/onb.html"> "Building an orthonormal basis from a 3d unit vector without normalization"</a>, J.Frisvad, 2012.
+
+mais cette solution souffre aussi d'un problème numérique qui a été corrigé depuis :\n
+<a href= "https://jcgt.org/published/0006/01/01/">"Building an Orthonormal Basis, Revisited" </a>Pixar, 2017
+
+et qui se code sans problèmes :
+\code
+struct World
+{
+    World( ) : t(), b(), n() {}
+    
+    World( const Vector& _n ) : n(_n) 
+    {
+        float s= std::copysign(float(1), n.z);  // s= 1 ou -1
+        float a= -1 / (s + n.z);
+        float d= n.x * n.y * a;
+        t= Vector(1 + s * n.x * n.x * a, s * d, -s * n.x);
+        b= Vector(d, s + n.y * n.y * a, -n.y);        
+    }
+    
+    // transforme le vecteur du repere local vers le repere du monde
+    Vector operator( ) ( const Vector& local )  const { return local.x * t + local.y * b + local.z * n; }
+    
+    // transforme le vecteur du repere du monde vers le repere local
+    Vector local( const Vector& global ) const { return Vector(dot(global, t), dot(global, b), dot(global, n)); }
+    
+    Vector t;   // x
+    Vector b;   // y
+    Vector n;   // z
+};
+\endcode
+
+__et voila !__ on a tous les éléments pour calculer l'image, il suffit de modifier le fragment qui calcule la couleur du pixel :
+\code
+    const float epsilon= 0.001;
+    
+    // passage dans le repere de la scene
+    World world(pn);
+    
+    // estimateur avec N directions
+    color= Black();
+    for(int i= 0; i < N; i++)
+    {
+        // genere une direction p(l)= 1 / (2pi)
+        Vector l;
+        float pdf;
+        {
+			pas de changement
+            float cos_theta= rng.sample();
+            float sin_theta= std::sqrt(1 - cos_theta * cos_theta);
+            float phi= float(2*M_PI) * rng.sample();
+            
+            // construit les composantes de la direction l et transforme dans le repere de la scene
+            l= world( Vector(std::cos(phi) * sin_theta, std::sin(phi) * sin_theta, cos_theta) );
+            
+            // evalue la pdf
+            pdf= 1 / (2*M_PI);
+        }
+        
+        // verifie la visibilité de la lumière / du ciel dans la direction l
+        if(!scene.intersect(p + epsilon*pn, l))
+        {
+            // V(p, l) = 1
+            // il ne reste plus qu'à évaluer les autres termes...
+            
+            Color Li= Color(1);
+            Color brdf= pmaterial.color / float(M_PI);
+            float cos_theta= std::max(float(0), dot( normalize(pn), normalize(l) ));
+            color= color + brdf * Li * cos_theta / pdf;
+        }
+    }
+    color= color / float(N);
+\endcode
+
+alors c'est faisable ? 
+
+il faudra aussi penser à décoller l'origine du rayon de la surface de l'intersection pour éviter des gros défauts dans l'image, cf \ref precision
+
+<center>
+	<IMG SRC="mcao_code-1024.png" width="100%">
+</center>
+
+bien sur, on peut créer des fonctions utilitaires pour générer une direction et évaluer une densité de proba. mais cet exemple est sans doute plus lisible rédigé
+comme ça.
+
+# éclairage direct 
+
+
+*/
