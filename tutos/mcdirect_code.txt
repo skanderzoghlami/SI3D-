@@ -179,9 +179,14 @@ et le code Monte Carlo, ie l'évaluation de la couleur du pixel aura toujours la
 pour évaluer l'éclairage ambiant, la scène éclairée par un ciel uniforme, on utilise la formulation sur les directions de l'équation de rendu, et 
 son estimateur, cf \ref mcrendu :
 \f[
+    L_r(p, \vec{o}) = \int_{\Omega} \frac{k}{\pi} V(p, \vec{l}) L_i(p, \vec{l}) \cos \theta \, dl
+\f]
+
+pour calculer l'éclairage ambiant, on considère que \f$ L_i(p, \vec{l})= 1\f$, ce qui simplifie un peu plus la formulation :
+\f[
 \begin{eqnarray*}
-    L_r(p, \vec{o}) &= & \int_{\Omega} \frac{k}{\pi} V(p, \vec{l}) L_i(p, \vec{l}) \cos \theta \, dl\\
-              &\approx & \frac{1}{N} \sum_j^N \frac{k}{\pi} V(p, \vec{l_j}) L_i(p, \vec{l_j}) \cos \theta \frac{1}{p(\vec{l_j})}
+    L_r(p, \vec{o}) &= & \int_{\Omega} \frac{k}{\pi} V(p, \vec{l}) \cos \theta \, dl\\
+              &\approx & \frac{1}{N} \sum_j^N \frac{k}{\pi} V(p, \vec{l_j}) \cos \theta \frac{1}{p(\vec{l_j})}
 \end{eqnarray*}
 \f]
 
@@ -227,12 +232,11 @@ c'est assez direct en ré-utilisant les fragments de code précédents :
             // pas d'intersection dans la direction l, V(p, l) = 1
             // il ne reste plus qu'à évaluer les autres termes de la fonction à integrer...
             
-            Color Li= Color(1);
             Color brdf= pmaterial.color / float(M_PI);
             float cos_theta= std::max(float(0), dot( normalize(pn), normalize(l) ));
 			
 			// et l'estimateur...
-            color= color + brdf * Li * cos_theta / pdf;
+            color= color + brdf * cos_theta / pdf;
         }
     }
     color= color / float(N);
@@ -317,10 +321,11 @@ __et voila !__ on a tous les éléments pour calculer l'image, il suffit de modi
             // V(p, l) = 1
             // il ne reste plus qu'à évaluer les autres termes...
             
-            Color Li= Color(1);
             Color brdf= pmaterial.color / float(M_PI);
             float cos_theta= std::max(float(0), dot( normalize(pn), normalize(l) ));
-            color= color + brdf * Li * cos_theta / pdf;
+			
+			// et l'estimateur...			
+            color= color + brdf * cos_theta / pdf;
         }
     }
     color= color / float(N);
@@ -337,7 +342,189 @@ il faudra aussi penser à décoller l'origine du rayon de la surface de l'inters
 bien sur, on peut créer des fonctions utilitaires pour générer une direction et évaluer une densité de proba. mais cet exemple est sans doute plus lisible rédigé
 comme ça.
 
+
 # éclairage direct 
 
+même démarche, on part de la formulation du problème, on écrit l'estimateur Monte Carlo et on choisit une densité de proba pour les échantillons.
+
+on utilise la formulation de l'équation de rendu sur la surface des sources de lumière, cf \ref mcdirect :
+\f[
+\begin{eqnarray*}
+    L_r(p, o) &= & \int_{S} \frac{k}{\pi} V(p, q) L_i(p, q) \cos \theta_p \frac{\cos \theta_q}{||\vec{pq}||^2} \, dq\\
+        &\approx & \frac{1}{N} \sum_j^N \frac{k}{\pi} V(p, q_j) L_i(p, q_j) \cos \theta_p \frac{\cos \theta_{q_j}}{||\vec{pq_j}||^2} \, \frac{1}{p(q_j)}
+\end{eqnarray*}
+\f]
+
+pour générer des points sur les sources de lumière, on utilise cette densité de proba : 
+\f[
+    p(q) = \frac{1}{n} \frac{1}{aire}
+\f]
+
+c'est la 1ère solution proposée dans \ref mcdirect : on choisit uniformément une source parmi n et ensuite un point sur cette source. 
+connaissant le point \f$ q \f$ et sa densité, comment évaluer la fonction intégrée ? on peut évaluer directement les cosinus et le carré de la distance entre p et q.
+il reste \f$ L_i(p, q) \f$, la lumière émise par q qui éclaire p, c'est tout simplement l'emission de la source de lumière que l'on a choisit pour générer q. 
+le dernier terme, la visibilité entre p et q s'évalue directement en vérifiant l'existance d'une intersection sur le rayon entre p et q.
+
+on va aussi simplifier la représentation des sources : ce sont les triangles de la scène dont la matière émet de la lumière. on peut les décrire avec une 
+structure qui regroupe quelques propriétés utiles :
+\code
+struct Source
+{
+	Color emission;	
+	Point a, b, c;
+	Vector n;
+	float area;
+};
+\endcode
+
+avec ces éléments le code de génération d'un point sur une source est sans surprise :
+\code    
+    // selectionne une source
+    int s= rng.sample_range(sources.size())   // uniforme entre 0 et n
+    const Source& source= sources[s];
+    
+    // place le point dans la source / triangle
+	float b0= rng.sample() / 2;
+	float b1= rng.sample() / 2;
+	float offset= b1 - b0;
+	
+	if(offset > 0)
+		b1= b1 + offset;
+	else
+		b0= b0 - offset;
+	
+	float b2= 1 - b0 - b1;
+
+	// construire le point
+	Point q= b0*a + b1*b + b2*c;
+    
+    // evalue la densite de proba
+    float pdf= 1 / float(sources.size()) * 1 / source.area;
+\endcode
+
+il ne reste plus qu'à finir d'écrire l'estimateur complet :
+\code
+    // estimateur avec N points
+    color= Black();
+    for(int i= 0; i < N; i++)
+    {
+        // génère un point sur une source / triangle
+		Color emission;
+        Point q;
+		Vector qn;
+        float pdf;
+        {
+			// selectionne une source
+			int s= rng.sample_range(sources.size());   // uniforme entre 0 et n
+			const Source& source= sources[s];
+			
+			// place le point dans la source / triangle
+			float b0= rng.sample() / 2;
+			float b1= rng.sample() / 2;
+			float offset= b1 - b0;
+			
+			if(offset > 0)
+				b1= b1 + offset;
+			else
+				b0= b0 - offset;
+			
+			float b2= 1 - b0 - b1;
+			
+			// construire le point
+			q= b0 * source.a + b1 * source.b + b2 * source.c;
+			
+			// conserve la normale et l'emission de la source, nécessaire pour évaluer la fonction à intégrer
+			qn= source.n;
+			emission= source.emission;
+			
+			// evalue la densite de proba
+			pdf= 1 / float(sources.size()) * 1 / source.area;
+        }
+        
+        // verifie la visibilité du point sur la source
+        if(scene.visible(p + epsilon*pn, q + epsilon*qn))
+        {
+            // V(p, q) = 1
+            // il ne reste plus qu'à évaluer les autres termes...
+            
+            Color brdf= pmaterial.color / float(M_PI);
+			
+            float cos_theta= std::max(float(0), dot( normalize(pn), normalize(Vector(p, q)) ));
+            float cos_theta_q= std::max(float(0), dot( normalize(qn), normalize(Vector(q, p)) ));
+			
+			// et l'estimateur...			
+            color= color + emission * brdf * cos_theta * cos_theta_q / distance2(p, q) / pdf;
+        }
+    }
+    color= color / float(N);
+\endcode
+
+mêmes remarques qu'au dessus, il faut penser à décoller l'origine et l'extrémité du rayon des surfaces pour éviter des défauts d'intersections. 
+autre subtilité, il faut faire bien attention à l'orientation des vecteurs pour évaluer les cosinus.
+
+on pourrait aussi créer une fonction `sample( )` dans `Source` qui génère un point sur la source pour rendre tout ça un peu plus lisible...
+par exemple :
+\code
+struct Source
+{
+	...
+	// génère un point sur la source
+	Point sample( Sampler& rng ) const
+	{
+		// place le point dans la source / triangle
+		float b0= rng.sample() / 2;
+		float b1= rng.sample() / 2;
+		float offset= b1 - b0;
+		
+		if(offset > 0)
+			b1= b1 + offset;
+		else
+			b0= b0 - offset;
+		
+		float b2= 1 - b0 - b1;
+		
+		// construire le point
+		return b0 * source.a + b1 * source.b + b2 * source.c;
+	}
+	
+	// densité de proba d'un point généré par sample()
+	float pdf( const Point& q ) const
+	{
+		return 1 / area;
+	}
+};
+\endcode
+
+l'estimateur complet est plus compact, du coup :
+\code 
+    // estimateur avec N points
+    color= Black();
+    for(int i= 0; i < N; i++)
+    {
+		// selectionne une source
+		int s= rng.sample_range(sources.size());   // uniforme entre 0 et n
+		const Source& source= sources[s];
+		
+        // génère un point sur une source / triangle
+        Point q= source.sample(rng);
+        float pdf= 1 / float(sources.size()) * source.pdf(q);
+        
+        // verifie la visibilité du point sur la source
+        if(scene.visible(p + epsilon*pn, q + epsilon*qn))
+        {
+            // V(p, q) = 1
+            // il ne reste plus qu'à évaluer les autres termes...
+            
+            Color brdf= pmaterial.color / float(M_PI);
+			
+            float cos_theta= std::max(float(0), dot( normalize(pn), normalize(Vector(p, q)) ));
+            float cos_theta_q= std::max(float(0), dot( normalize(qn), normalize(Vector(q, p)) ));
+			
+			// et l'estimateur...			
+            color= color + emission * brdf * cos_theta * cos_theta_q / distance2(p, q) / pdf;
+        }
+    }
+    color= color / float(N);
+\endcode
 
 */
