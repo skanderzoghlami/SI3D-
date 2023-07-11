@@ -124,7 +124,7 @@ struct Sampler
     // renvoyer un entier entre 0 et n (exclus).
     int sample_range( const int n ) 
 	{ 
-		int u= sample() * n; 
+		int u= uniform( rng ) * n; 
 		// vérifier que u est strictement plus petit que n
 		if(u >= n)
 			u= n -1;	// plus petit entier < n
@@ -137,6 +137,8 @@ struct Sampler
 on peut profiter des fonctions `sample()` et `sample_range()` pour vérifier que les nombres aléatoires ne sont pas égaux à 1 ou n, ce qui pourrait 
 provoquer quelques problèmes numériques sinon... par exemple, choisir un indice de source dans un tableau de n éléments avec `int s= rng.sample_range(sources.size())`, 
 on ne veut surtout pas que s soit plus grand que `sources.size()`...
+
+_remarque :_ on aurait aussi pu utiliser une `std::uniform_int_distribution<int>(0, n-1)` dans `sample_range()`...
 
 dernière subtilité, le code de rendu est multi-threadé et les threads ne doivent pas modifier les mêmes variables simultanément, par exemple 
 les générateurs aléatoires. le plus simple, dans ce cas, est tout simplement de créer un générateur local, ou privé pour chaque thread :
@@ -414,15 +416,16 @@ structure qui regroupe quelques propriétés utiles :
 \code
 struct Source
 {
-	Color emission;	
-	Point a, b, c;
-	Vector n;
-	float area;
+	Color emission;		// emission
+	Point a, b, c;		// sommets
+	Vector n;			// normale
+	float area;			// aire
 	
 	Source( const Point& _a, const Point& _b, const Point& _c, const Color _emission ) : emission(_emission), a(_a), b(_b), c(_c) 
 	{
-		n= normalize( cross( Vector(a, b), Vector(a, c) ) );
-		area= length(n) / 2;
+		Vector ng= cross( Vector(a, b), Vector(a, c) );
+		n= normalize(ng);
+		area= length(ng) / 2;
 		
 		assert(area * emission.max() > 0);	// aire nulle, pas de lumière...
 	}
@@ -513,6 +516,13 @@ il ne reste plus qu'à finir d'écrire l'estimateur complet :
 
 mêmes remarques qu'au dessus, il faut penser à décoller l'origine et l'extrémité du rayon des surfaces pour éviter des défauts d'intersections. 
 autre subtilité, il faut faire bien attention à l'orientation des vecteurs pour évaluer les cosinus.
+
+
+
+<center>
+	<IMG SRC="mcdirect_code-256.png" width="100%">
+</center>
+
 
 on pourrait aussi créer une fonction `sample( )` dans `Source` qui génère un point sur la source pour rendre tout ça un peu plus lisible...
 par exemple :
