@@ -1,0 +1,41 @@
+
+/*! \addtogroup mcvar Monte Carlo, convergence et réduction de variance
+
+    on vient de voir qu'estimer une intégrale avec Monte Carlo et les proba fonctionne plutot bien mais que selon le nombre d'échantillons utilisé 
+des erreurs assez importantes peuvent être visibles dans l'image, cf \ref mcrendu. on a également constaté que la densité de proba utilisée pouvait 
+avoir une influence importante sur ces erreurs, cf \ref mcdirect.
+
+du coup, on peut se demander : _comment choisir les bons paramètres ?_ le nombre d'échantillons et leur densité de proba ?
+
+vu que tout ça est basé sur des proba, et que l'on construit une variable aléatoire pour estimer l'intégrale, on peut aussi se rendre compte
+que l'estimateur lui même est aussi une variable aléatoire (!!) et que l'on peut estimer plusieurs choses : son espérance, bien sur, on vient de la calculer, 
+mais aussi sa variance et son erreur par rapport à une référence.
+
+voila les définitions, pour une variable aléatoire continue, de densité de proba \f$ p(x) \f$. l'espérance de \f$ x \f$ que l'on a déjà utilisé :
+\f[
+    \mu= E[x] = \int x \, p(x) \, dx
+\f]
+et sa variance :
+\f[
+    \sigma^2= V[x] = E[(x - \mu)^2] = E[x^2] - E[x]^2 = E[x^2] - \mu^2 
+    
+% = \int (x - \mu)^2 \, p(x) \, dx = \int x^2  \, p(x)  \,dx - \mu^2    
+\f]
+
+la variance décrit le fait que les valeurs de la variable aléatoire sont concentrées, ou pas, autour de son espérance (ou de sa moyenne...). une
+variance nulle indique que la variable aléatoire et sa densité de proba sont constantes. 
+
+on peut maintenant écrire la variance d'un estimateur :
+\f[
+\begin{eqnarray*}
+    I  &= & E \left[ \frac{f}{p} \right] \\
+    I_N&= & \frac{1}{N} \sum_i^N \frac{f(x_i)}{p(x_i)} \mbox{ avec } x_i \sim p
+\end{eqnarray*}
+\f]
+et
+\f[
+    V[I_N]= E[(I_N - I)^2]= E[I_N^2] - I^2= E \left[ \left( \frac{1}{N} \sum_i^N \frac{f(x_i)}{p(x_i)} \right)^2 \right] - I^2
+\f]
+
+
+*/
