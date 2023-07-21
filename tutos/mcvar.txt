@@ -11,31 +11,67 @@ vu que tout ça est basé sur des proba, et que l'on construit une variable alé
 que l'estimateur lui même est aussi une variable aléatoire (!!) et que l'on peut estimer plusieurs choses : son espérance, bien sur, on vient de la calculer, 
 mais aussi sa variance et son erreur par rapport à une référence.
 
-voila les définitions, pour une variable aléatoire continue, de densité de proba \f$ p(x) \f$. l'espérance de \f$ x \f$ que l'on a déjà utilisé :
+voila les définitions, pour une variable aléatoire \f$ x \f$, de densité de proba \f$ p(x) \f$. on commence par l'espérance de \f$ x \f$ que l'on a déjà utilisé :
 \f[
-    \mu= E[x] = \int x \, p(x) \, dx
+    \mu= E[x] = \int x \, p(x) \, dx \approx \frac{1}{N} \sum_i^N x_i \mbox{ avec } x_i \sim p
 \f]
-et sa variance :
+et sa variance, que l'on peut définir à partir de l'espérance :
 \f[
-    \sigma^2= V[x] = E[(x - \mu)^2] = E[x^2] - E[x]^2 = E[x^2] - \mu^2 
-    
-% = \int (x - \mu)^2 \, p(x) \, dx = \int x^2  \, p(x)  \,dx - \mu^2    
+    \sigma^2= V[x] = E[(x - \mu)^2]
 \f]
 
-la variance décrit le fait que les valeurs de la variable aléatoire sont concentrées, ou pas, autour de son espérance (ou de sa moyenne...). une
-variance nulle indique que la variable aléatoire et sa densité de proba sont constantes. 
+la variance décrit le fait que les valeurs de la variable aléatoire sont concentrées, ou pas, autour de son espérance (de sa moyenne...). une
+variance nulle indique que la variable aléatoire est constante. 
 
-on peut maintenant écrire la variance d'un estimateur :
+mais ces définitions ne nous aident pas trop pour connaitre l'erreur ou la variance d'un estimateur construit avec \f$ N \f$ échantillons. il suffit
+de se rappeler qu'un estimateur est la valeur moyenne de \f$ N \f$ réalisations de la même variable aléatoire :
+\f[
+	I_N= \frac{1}{N} \sum_i^N x_i 
+\f]
+que l'on peut aussi écrire :
+\f[
+	I_N= \frac{1}{N} \sum_i^N I_1
+\f]
+
+la variance à plusieurs propriétés que l'on peut utiliser pour simplifier les calculs, on va utiliser celles-ci :
 \f[
 \begin{eqnarray*}
-    I  &= & E \left[ \frac{f}{p} \right] \\
-    I_N&= & \frac{1}{N} \sum_i^N \frac{f(x_i)}{p(x_i)} \mbox{ avec } x_i \sim p
+	V[ax]&= &a^2 V[x] \\
+	V \left[ \sum_i^N y_i \right]&= & \sum_i^N V[y_i] \mbox{ si les N variables aléatoires } y_i \mbox{ sont indépendantes...}
 \end{eqnarray*}
 \f]
-et
+
+on peut maintenant écrire la variance de l'estimateur \f$ I_N \f$ :
 \f[
-    V[I_N]= E[(I_N - I)^2]= E[I_N^2] - I^2= E \left[ \left( \frac{1}{N} \sum_i^N \frac{f(x_i)}{p(x_i)} \right)^2 \right] - I^2
+	V[I_N]= V \left[ \frac{1}{N} \sum_i^N I_1 \right]= \frac{1}{N^2} V \left[\sum_i^N I_1 \right]= \frac{1}{N^2} \sum_i^N V[I_1]= \frac{1}{N^2} N V[I_1]
 \f]
+et on obtient enfin un résultat utilisable :
+\f[
+	V[I_N]= \frac{V[x]}{N} \mbox{ ou } V[I_N]= \frac{\sigma^2}{N}
+\f]
+
+__et alors ?__ ben maintenant, on est à peu près sur que la variance de l'estimateur décroit vers 0 lorsque le nombre d'échantillons croit vers l'infini, 
+on déjà constaté ce comportement dans tous les exemples d'intégration numérique, on peut même prédire à quelle vitesse la variance décroit.
+
+__ah ? mais la densité de proba à aussi une influence non ?__ oui, bien sur, il suffit de réécrire tout ça pour une fonction d'une variable aléatoire \f$ x \f$ :
+\f[
+	V[I_N]= \frac{1}{N} V \left[ \frac{f(x)}{p(x)} \right]
+\f]
+
+\f$ f \f$ est fixé, on ne peut pas vraiment la modifier, c'est la lumière qui se propage dans la scène, par contre si on change \f$ p \f$, on doit pouvoir observer 
+une différence... par exemple, si \f$ p \f$ est exactement proportionnelle à \f$ f \f$, ie \f$ p(x)= c f(x)\f$ avec une constante quelconque, on arrive à un résultat 
+un peu bizarre :
+\f[
+	V[I_N]= \frac{1}{N} V \left[ \frac{f(x)}{cf(x)} \right]= \frac{1}{N} V[1/c] \equiv 0
+\f]
+
+ce qui veut dire qu'en théorie, on peut calculer le résultat _exact_ avec un seul échantillon !! oui, mais en pratique, si on savait déja intégrer la fonction, on
+ne s'embeterait pas à utiliser Monte Carlo, donc il y a quand même assez peu de chances que ce résultat soit applicable directement.
+
+par contre, ce simple exercice montre que certaines densités de proba sont plus adaptées que d'autres, et on a déjà constaté ce comportement : 
+dans le premier exemple d'intégration de \f$ \cos \f$ avec une densite constante et une densite décroissante, cf \ref mc. mais également sur l'intégration de 
+l'éclairage direct avec plusieurs sources de lumière, cf \ref mcdirect.
+
 
 
 */
