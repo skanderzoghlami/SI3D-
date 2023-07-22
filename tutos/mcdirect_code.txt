@@ -580,7 +580,7 @@ l'estimateur complet est plus compact, du coup :
             Color brdf= pmaterial.color / float(M_PI);
 			
             float cos_theta= std::max(float(0), dot( normalize(pn), normalize(Vector(p, q)) ));
-            float cos_theta_q= std::max(float(0), dot( normalize(qn), normalize(Vector(q, p)) ));
+            float cos_theta_q= std::max(float(0), dot( normalize(source.n), normalize(Vector(q, p)) ));
 			
 			// et l'estimateur...			
             color= color + source.emission * brdf * cos_theta * cos_theta_q / distance2(p, q) / pdf;

@@ -72,6 +72,75 @@ par contre, ce simple exercice montre que certaines densités de proba sont plus
 dans le premier exemple d'intégration de \f$ \cos \f$ avec une densite constante et une densite décroissante, cf \ref mc. mais également sur l'intégration de 
 l'éclairage direct avec plusieurs sources de lumière, cf \ref mcdirect.
 
+# réduction de variance
 
+au final pour réduire la variance de l'estimateur, on a 2 options : 
+	- soit faire plus de calculs, en augmentant \f$ N \f$,
+	- soit modifier la densité de proba pour générer les échantillons (les points sur les sources ou les directions) en espérant trouver une solution plus intérressante, 
+	mais il n'y a pas de solutions magique qui permet de déterminer, a priori, quelle est la meilleure solution...
+	
+ie pour réduire la variance par 2, on peut soit faire 2 fois plus de calculs, soit trouver une densité de proba telle que la variance de l'estimateur soit 2 fois 
+plus petite... 
+	
+on peut bien sur simplement calculer des series d'images avec des densités de proba différentes et garder la meilleure, mais on a quand même un indice 
+sur une 'bonne' densité de proba, elle doit être, au moins à peu près, proportionnelle à la fonction intégrée... et c'est bien ce que l'avait observé 
+dans \ref mc en intégrant \f$ \cos \f$ avec une densité de proba décroissante, ie qui varie à peu près de la même manière que \f$ \cos \f$, revoila quelques
+réalisations des 2 estimateurs : avec une densité de proba constante ou pas :
+<center> 
+    <table style="width=100%;border=0px">
+        <tr><td><IMG SRC="mc_cos_uniform.png" width="100%"> <td><IMG SRC="mc_cos_linear.png" width="100%"></tr>
+    </table>
+</center> 
+
+plus la variance est faible, plus les réalisations de l'estimateur sont concentrées / regroupées autour de l'espérance, c'est bien ce que l'on observe...
+et pour un même nombre de calculs, ou d'échantillons, on observe bien que l'estimateur de droite à une plus petite variance que celui de gauche.
+
+_remarque :_ souvent on estime l'__erreur moyene__, notée RMSE et pas la variance \f$ \sigma^2 \f$. pourquoi ? la variance n'a pas la même unité que la valeur 
+estimée, à cause du carré. voila l'_erreur moyenne_ de l'estimateur : \f$ RMSE= \frac{\sigma}{\sqrt N} \f$, et pour avoir une erreur 2 fois plus petite, il faut 
+faire 4 fois plus de calculs, à cause de \f$ \sqrt N \f$
+
+# variance en image...
+
+vu que la variance est définie en fonction de l'espérance, on peut aussi l'estimer, à peu près de la même manière que la couleur du pixel. on peut utiliser cette
+relation pour faire le calcul : 
+\f[
+	V[x]= E[(x - \mu)^2]= E[x^2] - \mu^2= E[x^2] - E[x]^2
+\f]
+
+voila un exemple sur la cornell box en choisissant des point sur les sources :
+
+<center>
+	<IMG SRC="cornell_sources_var.png" width="100%"> 
+	
+    <table style="width=100%;border=0px">
+        <tr><td><IMG SRC="cornell_sources-0004.png" width="100%"> <td><IMG SRC="cornell_sources-0016.png" width="100%"></tr>
+    </table>
+</center>
+
+_remarque :_ utiliser directement cette définition n'est pas très stable numériquement, à cause de la précision limitée des floats, cf 
+<a href="https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm"> wikipedia </a>
+pour une solution numérique correcte.
+
+
+on constate bien que lorsque la variance est importante, en blanc sur l'image du dessus, l'estimateur produit des défauts qui s'estompent en augmentant 
+le nombre de calculs par pixel, à gauche N= 4 et à droite N= 16.
+
+sur l'autre scène avec les 2 gros panneaux lumineux, cf \ref mcdirect, on peut même regarder les différences entre 2 stratégies :
+	- soit choisir des directions aléatoires et espérer toucher une source de lumière, cf image de gauche,
+	- soit choisir un point sur une source en fonction de l'aire de la source, cf image de droite
+
+<center>
+    <table style="width=100%;border=0px">
+        <tr><td><IMG SRC="emission_directions_var.png" width="100%"> <td><IMG SRC="emission_sources_var.png" width="100%"></tr>
+    </table>
+</center>
+
+le résultat est quand même bien différent ! choisir un point sur les sources produit une variance vraiment plus petite !! sauf juste devant les panneaux
+lumineux ou choisir une direction est mieux... c'est quand même dommage de ne pas pouvoir choisir la meilleure solution... 
+
+on peut essayer de faire la moyenne des 2, mais on sait à l'avance que ca ne permettra pas de réduire de la variance : les variances de 2 variables 
+aléatoires s'additionnent, ie le résultat sera toujours moins bon... 
+
+mais bien sur, il y a une solution !! la suite dans Monte Carlo et MIS...
 
 */
