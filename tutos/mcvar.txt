@@ -95,9 +95,9 @@ réalisations des 2 estimateurs : avec une densité de proba constante ou pas :
 plus la variance est faible, plus les réalisations de l'estimateur sont concentrées / regroupées autour de l'espérance, c'est bien ce que l'on observe...
 et pour un même nombre de calculs, ou d'échantillons, on observe bien que l'estimateur de droite à une plus petite variance que celui de gauche.
 
-_remarque :_ souvent on estime l'__erreur moyene__, notée RMSE et pas la variance \f$ \sigma^2 \f$. pourquoi ? la variance n'a pas la même unité que la valeur 
-estimée, à cause du carré. voila l'_erreur moyenne_ de l'estimateur : \f$ RMSE= \frac{\sigma}{\sqrt N} \f$, et pour avoir une erreur 2 fois plus petite, il faut 
-faire 4 fois plus de calculs, à cause de \f$ \sqrt N \f$
+_remarque :_ souvent on estime l'__erreur moyenne__, notée RMSE et pas la variance \f$ \sigma^2 \f$. pourquoi ? la variance n'a pas la même unité que la valeur 
+estimée, à cause du carré. voila l'_erreur moyenne_ de l'estimateur : RMSE=\f$ \frac{\sigma}{\sqrt N} \f$, et pour avoir une erreur 2 fois plus petite, il faut 
+faire 4 fois plus de calculs, à cause de \f$ \sqrt N \f$.
 
 # variance en image...
 
@@ -123,23 +123,107 @@ pour une solution numérique correcte.
 
 
 on constate bien que lorsque la variance est importante, en blanc sur l'image du dessus, l'estimateur produit des défauts qui s'estompent en augmentant 
-le nombre de calculs par pixel, à gauche N= 4 et à droite N= 16.
+le nombre de calculs par pixel, à gauche N= 4 et à droite N= 16. 
+
+_remarque :_ oui, faire 4 fois plus de calculs permet de diminuer visiblement l'erreur moyenne RMSE de l'estimateur. mais c'est aussi 4 fois plus long...
+
+autre détail interressant, les zones de l'image les plus difficiles à intégrer, avec une variance importante, sont soit dans les 'reflets' sur les murs, soit dans
+les pénombres, mais également sur la face supérieure du grand cube, ie quand un objet est proche de la source de lumière qui l'éclaire.
 
 sur l'autre scène avec les 2 gros panneaux lumineux, cf \ref mcdirect, on peut même regarder les différences entre 2 stratégies :
-	- soit choisir des directions aléatoires et espérer toucher une source de lumière, cf image de gauche,
-	- soit choisir un point sur une source en fonction de l'aire de la source, cf image de droite
+	- soit choisir des directions aléatoires et espérer toucher une source de lumière, cf colonne de gauche,
+	- soit choisir un point sur une source en fonction de l'aire de la source, cf colonne de droite
 
+d'abord les rendus avec N = 256 :
+<center>
+    <table style="width=100%;border=0px">
+        <tr><td><IMG SRC="emission_directions-0256.png" width="100%"> <td><IMG SRC="emission_sources-0256.png" width="100%"></tr>
+    </table>
+</center>
+et les variances des 2 estimateurs : à gauche choisir une direction, à droite choisir une source en fonction de son aire :
 <center>
     <table style="width=100%;border=0px">
         <tr><td><IMG SRC="emission_directions_var.png" width="100%"> <td><IMG SRC="emission_sources_var.png" width="100%"></tr>
     </table>
 </center>
 
-le résultat est quand même bien différent ! choisir un point sur les sources produit une variance vraiment plus petite !! sauf juste devant les panneaux
-lumineux ou choisir une direction est mieux... c'est quand même dommage de ne pas pouvoir choisir la meilleure solution... 
+le résultat est quand même bien différent ! choisir un point sur les sources produit une variance vraiment plus petite !! sauf juste devant 
+les panneaux lumineux ou choisir une direction est mieux... mais partout ailleurs, choisir une source a une variance vraiment plus faible.
+c'est le même constat qu'au dessus, dans la cornell box, les objets proches des sources ont une variance importante, lorsque l'on choisit une source puis 
+un point sur cette source.
 
-on peut essayer de faire la moyenne des 2, mais on sait à l'avance que ca ne permettra pas de réduire de la variance : les variances de 2 variables 
-aléatoires s'additionnent, ie le résultat sera toujours moins bon... 
+## et alors ?
+
+on vient de voir que la variance des estimateurs est bien liée à la fonction intégrée et à la densité de proba utilisée. soit les pénombres, ie le terme 
+\f$ V(p, q) \f$, soit la distance entre p et q, ie le terme \f$ 1 / || \vec{pq} ||^2\f$ introduisent de la variance dans l'estimateur... le choix de la source de 
+lumière à aussi l'air d'avoir une influence, comme observé dans \ref mcdirect.
+
+_comment choisir a priori une densité de proba correcte ?_
+
+il n'y a pas de solution magique, mais on peut quand même analyser les différents termes de l'équation de rendu et proposer, dans chaque cas,
+une densité de proba correcte.
+
+par exemple, lorsque l'on intègre l'éclairage ambiant, comme dans l'exemple de \ref mcdirect_code :
+\f[
+    L_r(p, \vec{o}) =  \int_{\Omega} \frac{k}{\pi} V(p, \vec{l}) \cos \theta \, dl
+\f]
+
+on intègre le produit de 2 fonctions, la visibilité du ciel, \f$ V(p, \vec{l}) \f$ et le \f$ \cos \theta \f$. on ne connait pas la visibilité, par contre, on peut 
+sans doute faire quelquechose avec le \f$ \cos \f$... on a déjà vu qu'une densité de proba linéaire est mieux qu'une densité uniforme, dans ce cas... 
+
+peut-on directement utiliser \f$ \cos \f$ comme densité de proba ? ou de manère générale : peut-on utiliser une fonction comme densité de proba ?
+oui, mais à certaines conditions : 
+	- une densite de proba est normalisée : \f$ \int p(x) \, dx = 1\f$,
+	- la densité de proba ne doit pas être nulle si la fonction intégrée n'est pas nulle, ie il faut pouvoir évaluer \f$ \frac{f(x)}{p(x)}\f$, et placer des
+	échantillons partout où la fonction n'est pas nulle,
+	- on doit pouvoir calculer la fonction de répartition : \f$ P(x)= \int_0^x p(t) \, dt \f$,
+	- et pour générer des échantillons selon la densité de proba à partir d'un (ou plusieurs) nombre aléatoire, u, uniforme entre 0 et 1, il faut pouvoir 
+	inverser la fonction de répartition, \f$ x= P^{-1}(u)\f$...
+
+oui, ça fait pas mal de contraites sur les fonctions que l'on va pouvoir utiliser... 
+
+mais pour \f$ \cos \f$, voila le résultat :
+\f[
+\begin{eqnarray*}
+    p(\vec{l})&= & \frac{\cos \theta}{\pi}\\
+  \cos \theta &= & \sqrt{u_1}\\
+         \phi &= & 2\pi \, u_2\\
+      \vec{l} &= & ( \cos \phi \sin \theta, \, \sin \phi \sin \theta, \, \cos \theta)\\
+    \mbox{avec }\sin \theta &= & \sqrt{1 - \cos \theta \cos \theta}
+\end{eqnarray*}
+\f]
+
+sans surprise, \f$ p(\vec{l}) \f$, la densité de proba, est proportionnelle à \f$ \cos \f$. ce qui signifie que si on intégrait uniquement \f$ \cos \f$ le résultat serait _exact_ 
+avec 1 échantillon...
+mais bien sur on intègre le produit du cos et de la visibilité... la variance sera a priori très très faible dans les zones qui voient entièrement le ciel et plus
+importante sur les 'pénombres' : 
+
+voila les variances des 2 estimateurs, à gauche, une densité uniforme \f$ 1 / 2\pi\f$, et à droite, la nouvelle \f$ \cos / \pi \f$:
+<center>
+    <table style="width=100%;border=0px">
+        <tr><td><IMG SRC="ao_uniform_var.png" width="100%"> <td><IMG SRC="ao_cos_var.png" width="100%"></tr>
+    </table>
+</center>
+
+la variance est au minimum divisée par 2, sur le sol entre les cubes, par exemple, et à peu près par 10 en s'éloignant des cubes... pas mal pour une modification
+d'une seule ligne dans le code (bon ok, 2 lignes)...
+
+une dernière remarque, sur la face supérieure du grand cube, la variance est quasi nulle : en effet, la visibilite du ciel est parfaite et la fonction V devient 
+une constante qui n'introduit pas de variance.
+
+## et alors ?
+
+réduire la variance d'un estimateur Monte Carlo en choisissant une densité de proba adaptée, ie approximativement proportionnelle à la fonction integrée,
+permet de réduire les variations de \f$ \frac{f}{p}\f$, ie la variance de l'estimateur en plaçant plus d'échantillons dans les régions du domaine d'intégration 
+ou la fonction à des valeurs importantes. ces techniques portent un nom : échantillonnage _préférentiel_ ou _importance sampling_. 
+
+on vient de voir sur un exemple simple que c'est finalement assez efficace quand un seul terme introduit beaucoup de variance dans l'estimateur, 
+mais c'est quand même dommage de ne pas pouvoir s'adapter à la fonction intégrée : on a également vu, dans la scène éclairée par les 2 panneaux
+lumineux que la meilleure solution dépend de la situation, ie proche ou loin d'un panneau... on aimerait aussi pouvoir choisir la meilleure densité de proba
+ou, peut être, les mélanger pour pouvoir réduire la variance et l'erreur dans toutes les situations...
+
+on peut essayer de faire la moyenne des 2 stratégies (choisir une direction ou choisir un point sur une source), mais on sait à l'avance que ca ne permettra 
+pas de réduire de la variance : les variances de 2 variables aléatoires s'additionnent, ie le résultat sera toujours moins bon... 
 
 mais bien sur, il y a une solution !! la suite dans Monte Carlo et MIS...
 
