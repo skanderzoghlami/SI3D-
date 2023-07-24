@@ -92,7 +92,23 @@ struct ImageViewer : public App
         
         return tmp;
     }
-
+    
+    Image gray( const Image& image )
+    {
+        Image tmp(image.width(), image.height());
+        
+        for(unsigned i= 0; i < image.size(); i++)
+        {
+            Color color= image(i);
+            float g= (color.r + color.b + color.b) / 3;
+            //~ float g= std::max(color.r, std::max(color.g, std::max(color.b, float(0))));
+            tmp(i)= Color(g);
+        }
+        
+        return tmp;
+    }
+    
+    
     void title( const int index )
     {
         char tmp[1024];
@@ -124,7 +140,7 @@ struct ImageViewer : public App
             
             Image image= read(m_filenames[i].c_str());
             if(image.size() == 0)
-                return -1;
+                continue;
             
             m_images.push_back(image);
             m_times.push_back(timestamp(m_filenames[i].c_str()));
@@ -413,7 +429,11 @@ struct ImageViewer : public App
                 #pragma omp parallel for
                 for(unsigned i= 0; i < m_images.size(); i++)
                 {
-                    Image image= tone(m_images[i], m_saturation, m_compression);
+                    Image image;
+                    if(m_gray)
+                        image= tone(gray(m_images[i]), m_saturation, m_compression);
+                    else
+                        image= tone(m_images[i], m_saturation, m_compression);
                     
                     char filename[1024];
                     sprintf(filename, "%s-tone.png", m_filenames[i].c_str());
