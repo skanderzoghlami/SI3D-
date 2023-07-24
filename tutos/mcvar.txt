@@ -143,7 +143,7 @@ d'abord les rendus avec N = 256 :
 et les variances des 2 estimateurs : à gauche choisir une direction, à droite choisir une source en fonction de son aire :
 <center>
     <table style="width=100%;border=0px">
-        <tr><td><IMG SRC="emission_directions_var.png" width="100%"> <td><IMG SRC="emission_sources_var.png" width="100%"></tr>
+        <tr><td><IMG SRC="emission_directions_uniform_var.png" width="100%"> <td><IMG SRC="emission_sources_var.png" width="100%"></tr>
     </table>
 </center>
 
@@ -211,11 +211,35 @@ d'une seule ligne dans le code (bon ok, 2 lignes)...
 une dernière remarque, sur la face supérieure du grand cube, la variance est quasi nulle : en effet, la visibilite du ciel est parfaite et la fonction V devient 
 une constante qui n'introduit pas de variance.
 
+autre exemple, l'éclairage direct avec les 2 panneaux lumineux en choisissant des directions.
+voila les variances de 2 estimateurs : à gauche, une densité uniforme \f$ 1 / 2\pi\f$, et à droite, \f$ \cos / \pi \f$:
+<center>
+    <table style="width=100%;border=0px">
+        <tr><td><IMG SRC="emission_directions_uniform_var.png" width="100%"> <td><IMG SRC="emission_directions_cos_var.png" width="100%"></tr>
+    </table>
+</center>
+
+c'est mieux aussi dans ce cas ! au pied du panneau de droite dans l'image, la variance passe 0.25 à 0.15, pas tout à fait la moitiée, mais c'est mieux. 
+donc, utiliser la densité proportionnelle à cos, à l'air d'être une vraie bonne idée dans tous les cas (éclairage ambiant ou direct)...
+
+_pour les malins :_ vous pouvez aussi constater qu'utiliser une densité avec un cos permet de simplifier l'écriture de l'estimateur, et comme on intégre une fonction
+de moins, ie avec des variations en moins... l'estimateur converge mieux. par exemple celui-la : 
+\f[
+\require{cancel}
+\begin{eqnarray*}
+    L_r(p, \vec{o}) &= & \frac{1}{N} \sum_i^N \frac{k}{\pi} V(p, \vec{l_i}) \cos \theta_i \, \frac{1}{p(\vec{l_i})}\\
+	                         &= & \frac{1}{N} \sum_i^N \frac{k}{\cancel{\pi}} V(p, \vec{l_i}) \cancel{\cos \theta_i} \, \frac{1}{\frac{\cancel{\cos \theta_i}}{\cancel{\pi}}}\\
+							 &= & \frac{1}{N} \sum_i^N k V(p, \vec{l_i}) \mbox{ avec } \vec{l_i} \sim \frac{\cos \theta_i}{\pi} 
+\end{eqnarray*}
+\f]
+
+
+
 ## et alors ?
 
 réduire la variance d'un estimateur Monte Carlo en choisissant une densité de proba adaptée, ie approximativement proportionnelle à la fonction integrée,
 permet de réduire les variations de \f$ \frac{f}{p}\f$, ie la variance de l'estimateur en plaçant plus d'échantillons dans les régions du domaine d'intégration 
-ou la fonction à des valeurs importantes. ces techniques portent un nom : échantillonnage _préférentiel_ ou _importance sampling_. 
+ou la fonction a des valeurs importantes. ces techniques portent un nom : échantillonnage _préférentiel_ ou _importance sampling_. 
 
 on vient de voir sur un exemple simple que c'est finalement assez efficace quand un seul terme introduit beaucoup de variance dans l'estimateur, 
 mais c'est quand même dommage de ne pas pouvoir s'adapter à la fonction intégrée : on a également vu, dans la scène éclairée par les 2 panneaux
