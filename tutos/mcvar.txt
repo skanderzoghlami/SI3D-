@@ -7,7 +7,7 @@ avoir une influence importante sur ces erreurs, cf \ref mcdirect.
 
 du coup, on peut se demander : _comment choisir les bons paramètres ?_ le nombre d'échantillons et leur densité de proba ?
 
-vu que tout ça est basé sur des proba, et que l'on construit une variable aléatoire pour estimer l'intégrale, on peut aussi se rendre compte
+vu que tout ça est basé sur des proba, et que l'on construit une variable aléatoire pour estimer l'intégrale, on peut  se rendre compte
 que l'estimateur lui même est aussi une variable aléatoire (!!) et que l'on peut estimer plusieurs choses : son espérance, bien sur, on vient de la calculer, 
 mais aussi sa variance et son erreur par rapport à une référence.
 
@@ -235,7 +235,7 @@ de moins, ie avec des variations en moins... l'estimateur converge mieux. par ex
 
 
 
-## et alors ?
+# résumé
 
 réduire la variance d'un estimateur Monte Carlo en choisissant une densité de proba adaptée, ie approximativement proportionnelle à la fonction integrée,
 permet de réduire les variations de \f$ \frac{f}{p}\f$, ie la variance de l'estimateur en plaçant plus d'échantillons dans les régions du domaine d'intégration 

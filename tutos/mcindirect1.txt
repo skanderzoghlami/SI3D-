@@ -1,0 +1,207 @@
+
+/*! \addtogroup mcindirect1 Monte Carlo et éclairage indirect
+
+jusqu'à présent on s'est interessé à l'éclairage direct : la lumière émise par les sources de lumière qui arrive directement sur un point p de la scène, 
+cf \ref mcdirect. on a intégré soit sur toutes les directions de l'hemisphere autour de p, soit sur les points des sources de lumière :
+<center>
+    <table style="width=100%;border=0px">
+        <tr><td><IMG SRC="eqindirect1-03.png" width="100%"> <td><IMG SRC="eqindirect1-04.png" width="100%"></tr>
+    </table>
+</center>
+
+voila le résultat en image : ie l'éclairage direct
+<center> <IMG SRC="cornell_direct-0256.png" width="100%"> </center>
+
+mais tous ces points, visibles par p, sont eux aussi éclairés par les sources de lumière et on peut recommencer pour évaluer la lumière qu'ils 
+réfléchissent vers p :
+<center> <IMG SRC="eqindirect1-05.png" width="100%"> </center> 
+
+voila le résultat avec le calcul supplémentaire sur les points q, ie l'éclairage indirect :
+<center> <IMG SRC="cornell_indirect1-0256.png" width="100%"> </center> 
+
+on constate que les zones d'ombres ne sont plus toutes noires... par exemple, la face gauche du grand cube est toute rouge : le mur de gauche est 
+éclairé par la source et une bonne partie de cette lumière se réfléchit vers le grand cube. c'est bien visible aussi sur le plafond, tous les objets 
+éclairés par la source réfléchissent de la lumière et une partie de cette lumière éclaire le plafond.
+
+
+__comment formuler et calculer ça ?__
+
+pour calculer l'éclairage direct, on a séparé l'ensemble de directions qui peuvent éclairer le point p en deux parties : les directions qui correspondent aux sources de 
+lumière et les autres, qui correspondent à des objets... 
+
+on peut l'écrire comme ça :
+\f[
+\begin{eqnarray*}
+    L_r(p, \vec{o}) &= & L_e(p, \vec{o}) + \int_{\Omega} \frac{k_p}{\pi} V(p, \vec{l}) L_i(p, \vec{l}) \cos \theta \, dl\\
+    \mbox{avec } L_i(p, \vec{l}) &= & L_e(q, -\vec{l}) \neq 0 \mbox{ si q se trouve sur une source}\\
+    \mbox{et } q &= & \mbox{hit}(p, \vec{l}) \mbox{ un point q visible depuis p dans la direction } \vec{l}
+\end{eqnarray*}
+\f]
+
+ie on intégre l'emission des sources de lumière vues par le point p. pour les autres objets, leur matière n'emet pas de lumière et le terme \f$ L_e(q, -\vec{l}) \f$ est nul. 
+mais ça ne signifie pas qu'aucune lumière n'est réfléchie par le point q vers le point p... par contre, il va falloir faire le calcul.
+
+c'est exactement ce qu'exprime l'équation de rendu : on peut évaluer ce qui est réfléchit par un point en intégrant ce qui éclaire ce point : 
+ie calculer \f$ L_r() \f$ en intégrant \f$ L_i() \f$ ! (plus précisement en intégrant \f$ L_i() \cdot f_r() \cdot \cos\f$, ne pas oublier la reflexion de la lumière par la matière...)
+
+<center> <IMG SRC="eqindirect1_schema.png" width="60%"> </center> 
+
+ce qui permet de formuler :
+\f[
+\begin{eqnarray*}
+    L_r(p, \vec{o}) &= & L_e(p, \vec{o}) + \int_{\Omega} \frac{k_p}{\pi} V(p, \vec{l}) L_i(p, \vec{l}) \cos \theta \, dl\\
+    \mbox{avec } L_i(p, \vec{l}) &= & L_e(q, -\vec{l}) \neq 0 \mbox{ si q se trouve sur une source}\\
+    \mbox{ou } L_i(p, \vec{l}) &= &  L_r(q, -\vec{l})= \int_{\Omega} \frac{k_q}{\pi} V(q, \vec{l'}) L_i(q, \vec{l'}) \cos \theta' \, dl' \mbox{ sinon}\\
+    \mbox{et } q &= & \mbox{hit}(p, \vec{l}) \mbox{ un point q visible depuis p dans la direction } \vec{l}
+\end{eqnarray*}
+\f]
+
+on peut ré-ecrire tout ça directement :
+\f[
+\begin{eqnarray*}
+    L_r(p, \vec{o}) &= & L_e(p, \vec{o}) + \int_{\Omega} \frac{k_p}{\pi} V(p, \vec{l}) L_i(p, \vec{l}) \cos \theta \, dl\\
+    \mbox{avec } L_i(p, \vec{l}) &= & L_r(q, -\vec{l})= L_e(q, -\vec{l}) + \int_{\Omega} \frac{k_q}{\pi} V(q, \vec{l'}) L_i(q, \vec{l'}) \cos \theta' \, dl'\\
+    \mbox{et } q &= & \mbox{hit}(p, \vec{l}) \mbox{ un point q visible depuis p dans la direction } \vec{l}
+\end{eqnarray*}
+\f]
+
+c'est sans doute un peu bizarre, mais ré-écrire l'équation de rendu sous cette forme permet de se rendre compte qu'elle est récursive... puisque pour évaluer
+la lumière incidente en p, il faut calculer la lumière réfléchie par les points q... et pour évaluer ce qui est réfléchit par un point q, on commence par calculer ce qui 
+éclaire q, etc.
+
+# 1 rebond
+
+on a maintenant tous les ingrédients pour finir le calcul... on commence par générer une direction \f$ \vec{l} \f$, on calcule les intersections avec les
+objets de la scène pour trouver le point q, et en fonction de la matière de q, on évalue l'éclairage direct de q ou pas...
+mais pour évaluer l'éclairage direct de q, on intègre la lumière émise par des points \f$ s \f$ sur les sources de lumières. oui, il y a 2 intégrales à calculer... 
+
+avant de se lancer dans les calculs, il faut peut être se poser une question supplémentaire : combien de directions \f$ \{ \vec{l_i} \} \f$ et combien de points \f$ \{ s_i \} \f$ ?
+
+\f$ N \f$ pour chaque intégrale ? c'est à dire \f$ N^2 \f$ au total... si on choisit une valeur raisonnable, N= 256, par exemple, on va faire 256x256= 65536 calculs 
+par pixel et ça va être vraiment très long... on peut bien sur faire quelques tests pour déterminer des valeurs raisonnables pour le nombre de directions et 
+le nombre de points...
+
+on peut aussi se rappeller qu'un seul échantillon Monte Carlo est un estimateur correct d'une intégrale, mais avec une variance N fois plus importante... 
+cf l'analyse de la variance dans \ref mcvar.
+
+__et alors ?__
+ben la solution raisonnable est d'utiliser N directions \f$ \{ \vec{l_i} \} \f$ mais 1 seul point  \f$ \{ s_0 \} \f$ pour chaque direction !! on est même sur que 
+l'estimateur convergera vers le bon résultat en fonction de N. et que le temps de calcul de l'image sera linéaire en fonction de N... 
+
+il ne reste plus qu'à écrire l'estimateur :
+\f[
+\begin{eqnarray*}
+    L_r(p, \vec{o}) &= & L_e(p, \vec{o}) + \frac{1}{N}\sum_j^N \frac{k_p}{\pi} V(p, \vec{l_j}) L_i(p, \vec{l_j}) \cos \theta_j \, \frac{1}{p(\vec{l_j})}\\
+    \mbox{avec } L_i(p, \vec{l_j}) &= & L_e(q_j, -\vec{l_j}) + \frac{k_q}{\pi} V(q_j, s_0) L_e(s_0, -\vec{l'}) \cos \theta' \frac{\cos \theta_s'}{||q_j s_0||^2}\, \frac{1}{p(s_0)}
+\end{eqnarray*}
+\f]
+
+mais en écrivant l'intégration / l'estimateur de cette manière, sur l'ensemble de directions autour de p, le calcul de l'éclairage direct en p est _implicite_, ie on ne vise 
+pas directement les sources de lumières qui l'éclairent et le résultat va être décevant, cf \ref mcrendu...
+
+il faut donc re-écrire l'estimateur de l'éclairage direct en p comme dans \ref mcdirect, sans oublier le reste. le plus lisible est de décomposer un peu tout ça :
+\f[
+\begin{eqnarray*}
+    L_r(p, \vec{o}) &= & L_e(p, \vec{o}) + \mbox{direct}(p, \vec{o}) + \mbox{indirect}(p, \vec{o})\\
+\end{eqnarray*}
+\f]
+
+ce qui permet d'utiliser une formulation adaptée pour chaque terme : intégration sur les points s pour le direct, et intégration sur les directions pour l'indirect...
+\f[
+\begin{eqnarray*}
+	\mbox{direct}(x, \vec{v}) &= & \int_{S} \frac{k_x}{\pi} V(x, s) L_e(s, \vec{sx}) \cos \theta_x \frac{\cos \theta_s}{||\vec{xs}||^2} \, ds\\
+	\mbox{indirect}(x, \vec{v})& =& \int_{\Omega_O} \frac{k_x}{\pi} \mbox{direct}(y, \vec{l}) \cos \theta \, dl \mbox{  avec } y= \mbox{hit}(x, \vec{l})\\
+\end{eqnarray*}
+\f]
+
+cette manière d'écrire le calcul permet aussi de faire apparaitre la relation entre indirect et direct...
+mais __attention__ au domaine d'intégration \f$ \Omega_O \f$ : il ne représente que les directions \f$ \vec{l} \f$ qui correspondent à des objets, pas aux sources 
+de lumière. 
+
+on peut maintenant écrire estimateur complet : reste un dernier détail, quand on évalue direct(p, o) on veut utiliser N échantillons, par contre, lors de l'évaluation
+de l'indirect, on doit aussi évaluer direct(y), mais avec un seul échantillon \f$ s_0 \f$, pour ne pas exploser les temps de calculs. il est sans doute plus lisible de le 
+rendre explicite :
+\f[
+\begin{eqnarray*}
+	\mbox{direct}(x, \vec{v}) &= & \frac{1}{N} \sum_j^N \frac{k_x}{\pi} V(x, s_j) L_e(s_j, \vec{s_jx}) \cos \theta_x \frac{\cos \theta_{s_j}}{||\vec{xs_j}||^2} \, \frac{1}{p(s_j)}\\
+	\mbox{indirect}(x, \vec{v})& =& \frac{1}{N} \sum_j^N \frac{k_x}{\pi} 
+		\left[ 
+			\frac{k_{y_j}}{\pi} V(y_j, s_0) L_e(s_0, \vec{s_0 y_j}) \cos \theta_{y_j} \frac{\cos \theta_{s_0}}{||\vec{y_j s_0}||^2} \, \frac{1}{p(s_0)} 
+		\right] \cos \theta_j \frac{1}{p(\vec{l_j})}\\
+	\mbox{et } y_j &= & \mbox{hit}(x, \vec{l_j})
+\end{eqnarray*}
+\f]
+
+(bon, ok, c'est pas super joli... )
+
+il ne reste plus qu'à choisir les densités de proba, comme dans \ref mcdirect et \ref mcvar.
+
+voila quelques résultats pour N= 1, 4, 16, 64
+<center>
+    <table style="width=100%;border=0px">
+        <tr><td><IMG SRC="cornell_indirect1-0001.png" width="100%"> <td><IMG SRC="cornell_indirect1-0004.png" width="100%"></tr>
+        <tr><td><IMG SRC="cornell_indirect1-0016.png" width="100%"> <td><IMG SRC="cornell_indirect1-0064.png" width="100%"></tr>
+    </table>
+</center>
+
+et une dernière avec N= 4096 pour une image mieux convergée :
+<center> <IMG SRC="cornell_indirect1-4096.png" width="100%"> </center> 
+
+## et le code ?
+
+le plus simple est de respecter le découpage emission + direct + indirect et d'écrire une fonction pour chaque terme qui évalue un seul échantillon :
+\code
+Color direct( const Point& p, const Vector& pn, const Material& pmaterial, ... )
+{
+	// choisir une source
+	const Source& source= { ... };
+	// choisir un point la source
+	Point s= { ... };
+	// evaluer la pdf du point s
+	float pdf= { ... };
+	
+	Color color= Black();
+	// evaluer la visibilite de la source
+	if(scene.visible(p+epsilon*pn, s+epsilon*source.n))
+	{
+		// V(p, s)= 1, evaluer les autres termes
+		float cos_theta_p= { ... };
+		float cos_theta_s= { ... };
+		
+		color= pmaterial.color / float(M_PI) * source.emission * cos_theta_p * cos_theta_s / distance2(p, s) / pdf;
+	}
+	
+	return color;
+}
+
+Color indirect( const Point& p, const Vector& pn, const Material& pmaterial, ... )
+{
+	// choisir une direction l
+	Vector l= { ... };
+	// evaluer sa pdf
+	float pdf= { ... };
+	
+	Color color= Black();
+	// trouver le point q visible dans la direction l
+	if(Hit qhit= scene.intersect(p+epsilon*pn, l))
+	{
+		// recuperer les proprietes du point q
+		Point q= p + qhit.t * l;
+		Vector qn= scene.normal(qhit);
+		const Material& qmaterial= scene.material(qhit);
+		
+		if(qmaterial.emission.r + qmaterial.emission.g + qmaterial.emission.b > 0)
+			return Black();	// pas d'objet, pas d'indirect...
+		
+		// evaluer le direct du point q et l'equation de rendu en p
+		float cos_theta= std::max(float(0), dot(normalize(pn), normalize(l)));
+		color= pmaterial.color / float(M_PI) * direct(q, qn, qmaterial) * cos_theta / pdf;
+	}
+	
+	return color;
+}
+\endcode
+
+voila, il ne reste plus qu'à écrire la boucle pour sommer les N échantillons...
+
+*/
