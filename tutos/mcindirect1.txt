@@ -88,6 +88,8 @@ __et alors ?__
 ben la solution raisonnable est d'utiliser N directions \f$ \{ \vec{l_i} \} \f$ mais 1 seul point  \f$ \{ s_0 \} \f$ pour chaque direction !! on est même sur que 
 l'estimateur convergera vers le bon résultat en fonction de N. et que le temps de calcul de l'image sera linéaire en fonction de N... 
 
+\todo a reprendre, manque l'integrale ... et l'introduction de la separation direct + reste...
+
 il ne reste plus qu'à écrire l'estimateur :
 \f[
 \begin{eqnarray*}
@@ -118,8 +120,8 @@ cette manière d'écrire le calcul permet aussi de faire apparaitre la relation 
 mais __attention__ au domaine d'intégration \f$ \Omega_O \f$ : il ne représente que les directions \f$ \vec{l} \f$ qui correspondent à des objets, pas aux sources 
 de lumière. 
 
-on peut maintenant écrire estimateur complet : reste un dernier détail, quand on évalue direct(p, o) on veut utiliser N échantillons, par contre, lors de l'évaluation
-de l'indirect, on doit aussi évaluer direct(y), mais avec un seul échantillon \f$ s_0 \f$, pour ne pas exploser les temps de calculs. il est sans doute plus lisible de le 
+on peut maintenant écrire estimateur complet : reste un dernier détail, quand on évalue direct(p) on veut utiliser N échantillons, par contre, lors de l'évaluation
+de l'indirect, on doit aussi évaluer direct(), mais avec un seul échantillon \f$ s_0 \f$, pour ne pas exploser les temps de calculs. il est sans doute plus lisible de le 
 rendre explicite :
 \f[
 \begin{eqnarray*}
@@ -132,7 +134,7 @@ rendre explicite :
 \end{eqnarray*}
 \f]
 
-(bon, ok, c'est pas super joli... )
+(bon ok, c'est pas super joli... )
 
 il ne reste plus qu'à choisir les densités de proba, comme dans \ref mcdirect et \ref mcvar.
 
@@ -151,7 +153,7 @@ et une dernière avec N= 4096 pour une image mieux convergée :
 
 le plus simple est de respecter le découpage emission + direct + indirect et d'écrire une fonction pour chaque terme qui évalue un seul échantillon :
 \code
-Color direct( const Point& p, const Vector& pn, const Material& pmaterial, ... )
+Color direct1( const Point& p, const Vector& pn, const Material& pmaterial, ... )
 {
 	// choisir une source
 	const Source& source= { ... };
@@ -174,7 +176,7 @@ Color direct( const Point& p, const Vector& pn, const Material& pmaterial, ... )
 	return color;
 }
 
-Color indirect( const Point& p, const Vector& pn, const Material& pmaterial, ... )
+Color indirect1( const Point& p, const Vector& pn, const Material& pmaterial, ... )
 {
 	// choisir une direction l
 	Vector l= { ... };
@@ -202,6 +204,91 @@ Color indirect( const Point& p, const Vector& pn, const Material& pmaterial, ...
 }
 \endcode
 
-voila, il ne reste plus qu'à écrire la boucle pour sommer les N échantillons...
+il ne reste plus qu'à écrire la boucle pour sommer les N échantillons...
+
+# plusieurs rebonds
+
+il n'y a pas de bonnes raisons de ne calculer qu'un seul rebond sur un objet, la lumière se propage partout... encore une fois, pour rendre le résultat
+à peu près lisible, on va décomposer ce que l'on calcule en plusieurs termes. chaque terme représente la lumière apres une réflexion sur 1 objet, 2 objets, etc...
+
+\f[
+    L_r(p, \vec{o}) = L_0(p, \vec{o}) + L_1(p, \vec{o}) + L_2(p, \vec{o}) + L_3(p, \vec{o}) \, + \, ...
+\f]
+
+on connait déjà les premiers termes, on vient de les calculer : l'émission, \f$ L_0\f$, le direct \f$ L_1 \f$ et le premier rebond indirect \f$ L_2 \f$.
+à chaque terme, on ajoute un point sur lequel se réfléchit la lumière, et une intégration bien sur. du coup, on peut écrire chaque terme de la même manière, 
+en utilisant l'équation de rendu :
+\f[
+\begin{eqnarray*}
+	L_0(p_0, \vec{v})&= & L_e(p_0, \vec{v})\\
+	L_1(p_1, \vec{v})&= & L_e(p_1, \vec{v}) + \int_{\Omega} \frac{k_1}{\pi} L_0(x, - \vec{l}) \cos \theta \, dl \mbox{  avec } x= \mbox{hit}(p_1, \vec{l})\\
+	L_2(p_2, \vec{v})&= & L_e(p_2, \vec{v}) + \int_{\Omega} \frac{k_2}{\pi} L_1(x, - \vec{l}) \cos \theta \, dl \mbox{  avec } x= \mbox{hit}(p_2, \vec{l})\\
+	L_3(p_3, \vec{v})&= & L_e(p_3, \vec{v}) + \int_{\Omega} \frac{k_3}{\pi} L_2(x, - \vec{l}) \cos \theta \, dl \mbox{  avec } x= \mbox{hit}(p_3, \vec{l})\\
+\end{eqnarray*}
+\f]
+
+mais avec cette application directe de l'équation de rendu, on a encore le même problème : l'éclairage direct de chaque terme n'est calculé qu'implicitement.
+pour aboutir à une formulation efficace, il faut séparer les directions \f$ \Omega_S \f$ pour lesquelles une source est visible, des autres directions \f$ \Omega_O \f$.
+c'est èquivalent à re-décomposer chaque terme en : emission + direct + rebond, pour les termes incluant un rebond.
+par exemple, pour \f$ L_2(p_2, \vec{v}) \f$ :
+\f[
+\begin{eqnarray*}
+	L_2(p_2, \vec{v})&= & L_e(p_2, \vec{v}) \\
+	\mbox{(direct)    }    &+ & \int_{\Omega_S} \frac{k_2}{\pi} L_e(x, - \vec{l}) \cos \theta \, dl \mbox{  avec } x= \mbox{hit}(p_2, \vec{l}) \mbox{ et }L_e(x, - \vec{l}) \neq 0\\
+	\mbox{(indirect)    } &+ & \int_{\Omega_O} \frac{k_2}{\pi} L_1(x, - \vec{l}) \cos \theta \, dl \mbox{  avec } x= \mbox{hit}(p_2, \vec{l}) \mbox{ et }L_e(x, - \vec{l}) = 0\\
+\end{eqnarray*}
+\f]
+
+on arrive enfin à une solution explicite, en intégrant sur l'aire des sources S, ce qui permettra de faire un calcul efficace pour l'éclairage direct de chaque terme :
+\f[
+\begin{eqnarray*}
+	L_2(p_2, \vec{v})&= & L_e(p_2, \vec{v}) \\
+	\mbox{(direct)    }    &+ & \int_{S} \frac{k_2}{\pi} L_e(s, \vec{s p_2}) \cos \theta \frac{\cos \theta_s}{|| \vec{p_2 s} ||^2}  \, ds \mbox{ avec } L_e(s, \vec{s p_2}) \neq 0\\
+	\mbox{(indirect)    } &+ & \int_{\Omega_O} \frac{k_2}{\pi} L_1(x, - \vec{l}) \cos \theta \, dl \mbox{  avec } x= \mbox{hit}(p_2, \vec{l}) \mbox{ et }L_e(x, - \vec{l}) = 0\\
+\end{eqnarray*}
+\f]
+
+au final, on obtient les termes suivants :
+\f[
+\begin{eqnarray*}
+	L_0(p_0, \vec{v})&= & L_e(p_0, \vec{v})\\
+	
+	L_1(p_1, \vec{v})&= & L_e(p_1, \vec{v}) \\
+							   &+ & \int_{S} \frac{k_1}{\pi} L_e(s, \vec{s p_1}) \cos \theta \frac{\cos \theta_s}{|| \vec{p_1 s} ||^2}  \, ds \\
+							   
+	L_2(p_2, \vec{v})&= & L_e(p_2, \vec{v}) \\
+							   &+ & \int_{S} \frac{k_2}{\pi} L_e(s, \vec{s p_2}) \cos \theta \frac{\cos \theta_s}{|| \vec{p_2 s} ||^2}  \, ds \\
+							   &+ & \int_{\Omega_O} \frac{k_2}{\pi} L_1(x, - \vec{l}) \cos \theta \, dl\\
+							   
+	L_3(p_3, \vec{v})&= & L_e(p_3, \vec{v}) \\
+							   &+ & \int_{S} \frac{k_3}{\pi} L_e(s, \vec{s p_3}) \cos \theta \frac{\cos \theta_s}{|| \vec{p_3 s} ||^2}  \, ds \\
+							   &+ & \int_{\Omega_O} \frac{k_3}{\pi} L_2(x, - \vec{l}) \cos \theta \, dl\\
+\end{eqnarray*}
+\f]
+
+
+que l'on peut schématiser :
+
+- pour L0, on évalue juste l'emission de la matière du point p0 :
+<center> <IMG SRC="eqindirect_L0_schema.png" width="40%"> </center> 
+
+- pour L1, on intègre le direct en p1 avec N points sur les sources { s } :
+<center> <IMG SRC="eqindirect_L1_schema.png" width="40%"> </center> 
+
+- pour L2, on intégre le direct en p2 avec N points sur les sources { s }, puis on intégre les rebonds avec N directions vers les points { p1 }, et en chaque point p1, on 
+évalue le direct avec un seul point sur les sources :
+<center> <IMG SRC="eqindirect_L2_schema.png" width="40%"> </center> 
+
+- et L3, le direct en p3 puis les rebonds avec N directions vers les points { p2 }, puis pour chaque point p2, on évalue son direct avec un point, puis on génère une direction, 
+on trouve le point p1, on évalue son direct avec un seul point :
+<center> <IMG SRC="eqindirect_L3_schema.png" width="40%"> </center> 
+
+oui, c'est répétitif, ça tombe bien : on va pouvoir ré-utiliser les mêmes fonctions que tout à l'heure, `direct1()` et `indirect1()` pour estimer tout ça !!
+
+
+# tous les rebonds
+
+# bilan
+
 
 */
