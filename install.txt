@@ -22,7 +22,7 @@ c'est l'outil premake qui permet de créer les projets, et les makefiles, cf [é
 
 ## linux
 
-installez les paquets, si nécessaire (pas la peine au nautibus) : `libsdl2-dev, libsdl2-image-dev, libglew-dev` et `premake4`.
+installez les paquets, si nécessaire (pas la peine au nautibus) : `libsdl2-dev, libsdl2-image-dev, libglew-dev` et `premake4`, ou premke5 s'il est disponible.
 par exemple, pour ubuntu et ses variantes :
 
     sudo apt install libsdl2-dev libsdl2-image-dev libglew-dev premake4
@@ -101,7 +101,8 @@ le `Makefile` se trouve dans le répertoire de base de gKit.
 ## linux + makefile
 
 \code
-./premake4 gmake
+premake4 gmake		// si premake4 est installe dans le système
+./premake5 gmake	// si premake5 est copie dans le repertoire de gKit
 \endcode
 
 le `Makefile` se trouve dans le répertoire de base de gKit. 
@@ -145,7 +146,7 @@ pour ajouter un nouveau projet, le plus simple est de modifier premake4.lua et d
 
 ## projet en 1 fichier .cpp
 
-le plus simple est d'ajouter votre fichier .cpp dans le répertoire `src` et de modifier la liste des projets dans `premake4.lua`:
+le plus simple est d'ajouter votre fichier .cpp dans le répertoire `projets` et de modifier la liste des projets dans `premake4.lua`:
 
 trouvez cette déclaration dans premake4.lua :
 
