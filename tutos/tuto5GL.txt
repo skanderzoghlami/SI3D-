@@ -111,7 +111,7 @@ int init( )
 		GL_RGBA,
 		image.width, image.height, 0,
 		data_format, data_type,
-		image.buffer());
+		image.data());
 	
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 	...
@@ -417,13 +417,13 @@ mais il y a encore plus simple, il suffit de demander à openGL de faire les pr�
 	// transmet uniquement l'image pleine resolution, level 0
 	glTexImage2D(GL_TEXTURE_2D, 0,
 		GL_RGBA, image.width, image.height, 0,
-		data_format, data_type, image.buffer());
+		data_format, data_type, image.data());
 	
 	// precalcule les autres nvieaux 
 	glGenerateMipmap(GL_TEXTURE_2D);
 	
 	// optionnel ? à vérifier
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, miplevels(image.wdith, image.height));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, miplevels(image.width, image.height));
 \endcode
 
 comme ces niveaux de mipmaps ne sont qu'une approximation du vrai calcul, il y a des manières différentes de les utiliser et il faut donc configurer 

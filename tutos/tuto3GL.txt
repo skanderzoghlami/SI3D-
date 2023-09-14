@@ -185,7 +185,7 @@ de les affecter à un uniform, c'est le role du parametre _transpose_ de glUnifo
 \code
 Transform t;
 GLint location= glGetUniformLocation(program, "matrix");        // cf declaration dans un shader : uniform mat4 matrix;
-glUniformMatrix4fv(location, /* count */ 1, /* transpose */ GL_TRUE, t.buffer());
+glUniformMatrix4fv(location, /* count */ 1, /* transpose */ GL_TRUE, t.data());
 \endcode
 
 
