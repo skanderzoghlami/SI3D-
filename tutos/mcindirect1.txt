@@ -9,14 +9,17 @@ cf \ref mcdirect. on a intégré soit sur toutes les directions de l'hemisphere 
     </table>
 </center>
 
-voila le résultat en image : ie l'éclairage direct
+les sources de lumière sont en blanc dans les vignettes en bas à gauche des images. les autres pixels des vignettes indiquent la couleur des objets de 
+la scène, ce qui permet de mieux se repérer, mais tous ces points ne contribuent pas au calcul. les points rouges montrent les échantillons utilisés pour 
+estimer l'équation de rendu.
+
+voila le résultat en image : ie l'éclairage direct évalué pour le point visible pour le centre de chaque pixel de l'image :
 <center> <IMG SRC="cornell_direct-0256.png" width="100%"> </center>
 
-mais tous ces points, visibles par p, sont eux aussi éclairés par les sources de lumière et on peut recommencer pour évaluer la lumière qu'ils 
-réfléchissent vers p :
+mais tous ces points, visibles par p, sont eux aussi éclairés par les sources de lumière et on peut également évaluer la lumière qu'ils réfléchissent vers p :
 <center> <IMG SRC="eqindirect1-05.png" width="100%"> </center> 
 
-voila le résultat avec le calcul supplémentaire sur les points q, ie l'éclairage indirect :
+voila le résultat avec ce calcul supplémentaire, ie l'éclairage indirect :
 <center> <IMG SRC="cornell_indirect1-0256.png" width="100%"> </center> 
 
 on constate que les zones d'ombres ne sont plus toutes noires... par exemple, la face gauche du grand cube est toute rouge : le mur de gauche est 
@@ -26,8 +29,9 @@ on constate que les zones d'ombres ne sont plus toutes noires... par exemple, la
 
 __comment formuler et calculer ça ?__
 
-pour calculer l'éclairage direct, on a séparé l'ensemble de directions qui peuvent éclairer le point p en deux parties : les directions qui correspondent aux sources de 
-lumière et les autres, qui correspondent à des objets... 
+pour calculer l'éclairage direct, on a utilisé l'équation de rendu : on a séparé l'ensemble de directions qui peuvent éclairer le point p en deux parties : 
+les directions qui correspondent aux sources de lumière et les autres, qui correspondent à des objets... pour les directions qui correspondent aux sources de 
+lumière, on connait la lumière incidente, c'est l'emission de la source, mais on a considéré que les directions qui correspondent aux objets ne contribuent pas.
 
 on peut l'écrire comme ça :
 \f[
@@ -44,9 +48,18 @@ mais ça ne signifie pas qu'aucune lumière n'est réfléchie par le point q ver
 c'est exactement ce qu'exprime l'équation de rendu : on peut évaluer ce qui est réfléchit par un point en intégrant ce qui éclaire ce point : 
 ie calculer \f$ L_r() \f$ en intégrant \f$ L_i() \f$ ! (plus précisement en intégrant \f$ L_i() \cdot f_r() \cdot \cos\f$, ne pas oublier la reflexion de la lumière par la matière...)
 
+et dans les scènes simples, sans volume, ni brouillard, ni fumée, etc. ce qui est réfléchit par un point q dans une direction, éclaire un point p, visible dans cette direction :
+\f[
+\begin{eqnarray*}
+	L_i(p, \vec{l})&= & L_r(q, - \vec{l})\\
+	\mbox{et } q &= & \mbox{hit}(p, \vec{l}) \mbox{ un point q visible depuis p dans la direction } \vec{l}
+\end{eqnarray*}
+\f]
+
+c'est sans doute plus clair, sur un schéma :
 <center> <IMG SRC="eqindirect1_schema.png" width="60%"> </center> 
 
-ce qui permet de formuler :
+avec ces 2 propriétés, il ne reste plus qu'à écrire la substitution, ie remplacer \f$ L_i(p, \vec{l}) \f$ par \f$ L_r(q, -\vec{l}) \f$ :
 \f[
 \begin{eqnarray*}
     L_r(p, \vec{o}) &= & L_e(p, \vec{o}) + \int_{\Omega} \frac{k_p}{\pi} V(p, \vec{l}) L_i(p, \vec{l}) \cos \theta \, dl\\
@@ -66,8 +79,9 @@ on peut ré-ecrire tout ça directement :
 \f]
 
 c'est sans doute un peu bizarre, mais ré-écrire l'équation de rendu sous cette forme permet de se rendre compte qu'elle est récursive... puisque pour évaluer
-la lumière incidente en p, il faut calculer la lumière réfléchie par les points q... et pour évaluer ce qui est réfléchit par un point q, on commence par calculer ce qui 
-éclaire q, etc.
+la lumière incidente en p, il faut calculer la lumière réfléchie par les points q qui peuvent éclairer p... et pour évaluer ce qui est réfléchit par un point q, 
+on commence par calculer ce qui éclaire q, etc.
+
 
 # 1 rebond
 
