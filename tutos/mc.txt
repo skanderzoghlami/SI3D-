@@ -14,7 +14,7 @@ ainsi que l'espérance d'une fonction de cette variable aléatoire :
     E(f(x)) = \int f(x) \, p(x) \, dx \approx \frac{1}{N} \sum_i^N f(x_i)
 \f]
 
-mais on a aussi besoin de connaitre la densité de probablité de la variable aléatoire, \f$ p(x) \f$. 
+mais on a aussi besoin de connaitre la densité de probabilité de la variable aléatoire, \f$ p(x) \f$. 
 
 __et alors ?__ comment peut-on utiliser cette définition pour estimer une intégrale ? par exemple : 
 \f[
@@ -115,7 +115,7 @@ et on peut écrire l'estimateur :
 mais pour écrire ça, on a remplacé la variable d'intégration par une variable aléatoire. il faut pouvoir faire 2 choses avec cette variable aléatoire :
 évaluer sa densité de probabilité, \f$ p \f$, et savoir générer des points  \f$ x_i \f$, des réalisations, de cette variable aléatoire selon sa densité de probabilité...
 
-## densité de probablité et variable aléatoire
+## densité de probabilité et variable aléatoire
 
 une densité de probabilité \f$ p \f$ est une fonction qui décrit les valeurs que peut prendre une variable aléatoire \f$ x \f$ et à quel point ces valeurs 
 sont 'probables', si \f$ p(x_i) \f$ est faible (par rapport aux autres valeurs de \f$ p(x) \f$), \f$ x_i \f$ est une valeur peu probable de la variable aléatoire.
