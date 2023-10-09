@@ -15,14 +15,22 @@
 #include "mesh.h"
 #include "wavefront.h"
 
-
 struct Ray
 {
-    Point o;            // origine
-    Vector d;           // direction
+    Point o;                // origine
+    Vector d;               // direction
+    float tmax;             // position de l'extremite, si elle existe. le rayon est un intervalle [0 tmax]
     
-    Ray( const Point& _o, const Point& _e ) :  o(_o), d(Vector(_o, _e)) {}
+    // le rayon est un segment, on connait origine et extremite, et tmax= 1
+    Ray( const Point& origine, const Point& extremite ) : o(origine), d(Vector(origine, extremite)), tmax(1) {}
+    
+    // le rayon est une demi droite, on connait origine et direction, et tmax= \inf
+    Ray( const Point& origine, const Vector& direction ) : o(origine), d(direction), tmax(FLT_MAX) {}
+    
+    // renvoie le point sur le rayon pour t
+    Point point( const float t ) const { return o + t * d; }
 };
+
 
 struct Hit
 {
@@ -32,6 +40,8 @@ struct Hit
     
     Hit( ) : t(FLT_MAX), u(), v(), triangle_id(-1) {}
     Hit( const float _t, const float _u, const float _v, const int _id ) : t(_t), u(_u), v(_v), triangle_id(_id) {}
+    
+    // renvoie vrai si intersection
     operator bool ( ) { return (triangle_id != -1); }
 };
 
@@ -39,7 +49,7 @@ struct Triangle
 {
     Point p;            // sommet a du triangle
     Vector e1, e2;      // aretes ab, ac du triangle
-    int id;
+    int id;             // indice du triangle
     
     Triangle( const TriangleData& data, const int _id ) : p(data.a), e1(Vector(data.a, data.b)), e2(Vector(data.a, data.c)), id(_id) {}
     
@@ -59,40 +69,30 @@ struct Triangle
         Vector tvec(p, ray.o);
         
         float u= dot(tvec, pvec) * inv_det;
-        if(u < 0 || u > 1) return Hit();
+        if(u < 0 || u > 1) return Hit();        // pas d'intersection
         
         Vector qvec= cross(tvec, e1);
         float v= dot(ray.d, qvec) * inv_det;
-        if(v < 0 || u + v > 1) return Hit();
+        if(v < 0 || u + v > 1) return Hit();    // pas d'intersection
         
         float t= dot(e2, qvec) * inv_det;
-        if(t > tmax || t < 0) return Hit();
+        if(t > tmax || t < 0) return Hit();     // pas d'intersection
         
-        return Hit(t, u, v, id);           // p(u, v)= (1 - u - v) * a + u * b + v * c
+        return Hit(t, u, v, id);                // p(u, v)= (1 - u - v) * a + u * b + v * c
     }
 };
 
+// renvoie la normale au point d'intersection
 Vector normal( const Mesh& mesh, const Hit& hit )
 {
-    // recuperer le triangle complet dans le mesh
+    // recuperer le triangle du mesh
     const TriangleData& data= mesh.triangle(hit.triangle_id);
+    
     // interpoler la normale avec les coordonnées barycentriques du point d'intersection
     float w= 1 - hit.u - hit.v;
     Vector n= w * Vector(data.na) + hit.u * Vector(data.nb) + hit.v * Vector(data.nc);
     return normalize(n);
 }
-
-Color diffuse_color( const Mesh& mesh, const Hit& hit )
-{
-    const Material& material= mesh.triangle_material(hit.triangle_id);
-    return material.diffuse;
-}
-
-struct Source
-{
-    Point s;
-    Color emission;
-};
 
 int main( const int argc, const char **argv )
 {
@@ -110,38 +110,18 @@ int main( const int argc, const char **argv )
 
     Mesh mesh= read_mesh(mesh_filename);
     
-    // recupere les triangles
+    // recupere les triangles dans le mesh
     std::vector<Triangle> triangles;
     {
         int n= mesh.triangle_count();
         for(int i= 0; i < n; i++)
             triangles.emplace_back(mesh.triangle(i), i);
     }
-    
-    // recupere les sources
-    std::vector<Source> sources;
-    {
-        int n= mesh.triangle_count();
-        for(int i= 0; i < n; i++)
-        {
-            const Material& material= mesh.triangle_material(i);
-            if(material.emission.r + material.emission.g + material.emission.b > 0)
-            {
-                // utiliser le centre du triangle comme source de lumière
-                const TriangleData& data= mesh.triangle(i);
-                Point p= (Point(data.a) + Point(data.b) + Point(data.c)) / 3;
-                
-                sources.push_back( { p, material.emission } );
-            }
-        }
-        
-        printf("%d sources\n", int(sources.size()));
-        assert(sources.size() > 0);
-    }
-    
+
+    //
     Image image(1024, 768);
 
-    // recupere les transformations
+    // recupere les transformations pour generer les rayons
     camera.projection(image.width(), image.height(), 45);
     Transform model= Identity();
     Transform view= camera.view();
@@ -151,22 +131,27 @@ int main( const int argc, const char **argv )
     
 auto start= std::chrono::high_resolution_clock::now();
     
-    // c'est parti, parcours tous les pixels de l'image
+    // parcours tous les pixels de l'image
     for(int y= 0; y < image.height(); y++)
     for(int x= 0; x < image.width(); x++)
     {
-        // generer le rayon
-        Point origine= inv(Point(x + .5f, y + .5f, 0));
-        Point extremite= inv(Point(x + .5f, y + .5f, 1));
+        // generer le rayon au centre du pixel
+        Point origine= inv(Point(x + float(0.5), y + float(0.5), 0));
+        Point extremite= inv(Point(x + float(0.5), y + float(0.5), 1));
         Ray ray(origine, extremite);
         
         // calculer les intersections avec tous les triangles
-        Hit hit;
+        Hit hit;                // proprietes de l'intersection
+        float tmax= ray.tmax;   // extremite du rayon
         for(int i= 0; i < int(triangles.size()); i++)
         {
-            if(Hit h= triangles[i].intersect(ray, hit.t))
-                // ne conserve que l'intersection la plus proche de l'origine du rayon
+            if(Hit h= triangles[i].intersect(ray, tmax))
+            {
+                // ne conserve que l'intersection *valide* la plus proche de l'origine du rayon
+                assert(h.t > 0);
                 hit= h;
+                tmax= h.t;
+            }
         }
         
     #if 0
@@ -183,50 +168,13 @@ auto start= std::chrono::high_resolution_clock::now();
             image(x, y)= Color(std::abs(n.x), std::abs(n.y), std::abs(n.z));
         }
     #endif
-    
-    #if 0
-        if(hit)
-        {
-            // position et emission de la source de lumiere
-            Point s= sources[0].s;
-            Color emission= sources[0].emission;
-            
-            // position du point d'intersection
-            Point p= ray.o + hit.t * ray.d;
-            // interpoler la normale au point d'intersection
-            Vector pn= normal(mesh, hit);
-            // direction de p vers la source s
-            Vector l= Vector(p, s);
-            
-            // visibilite entre p et s
-            float v= 1;
-        #if 0
-            Ray shadow_ray(p + 0.001f * pn, s);
-            for(int i= 0; i < int(triangles.size()); i++)
-            {
-                if(triangles[i].intersect(shadow_ray, 1 - .001f))
-                {
-                    // on vient de trouver un triangle entre p et s. p est donc a l'ombre
-                    v= 0;
-                    break;  // pas la peine de continuer
-                }
-            }
-        #endif
-            
-            // calculer la lumiere reflechie vers la camera / l'origine du rayon
-            float cos_theta= std::abs(dot(pn, normalize(l)));
-            Color fr= diffuse_color(mesh, hit) / M_PI;
-            
-            Color color= v * emission * fr * cos_theta / length2(l);
-            image(x, y)= Color(color, 1);
-        }
-    #endif
     }
+
 auto stop= std::chrono::high_resolution_clock::now();
-int cpu= std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count();
-printf("%dms\n", cpu);
+    int cpu= std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count();
+    printf("%dms\n", cpu);
     
     write_image(image, "render.png");
-    write_image_hdr(image, "shadow.hdr");
+    write_image_hdr(image, "render.hdr");
     return 0;
 }
