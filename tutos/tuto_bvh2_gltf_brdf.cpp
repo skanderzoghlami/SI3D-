@@ -507,7 +507,7 @@ Color sample_texture( const vec2& t, const ImageData& texture )
 }
 
 //! matiere par defaut, en cas de description foireuse...
-static GLTFMaterial default_material= { White(), Black(), 0, 1, 0, 0, 0, Black(), -1, -1, -1, -1, -1, -1, -1, -1 };
+static GLTFMaterial default_material= GLTFMaterial ();
 
 //! renvoie la matiere du point d'intersection.
 const GLTFMaterial& hit_material( const Hit& hit, const GLTFScene& scene )
