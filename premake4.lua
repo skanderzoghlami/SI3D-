@@ -41,7 +41,7 @@ solution "gKit2light"
         buildoptions { "-fopenmp" }
         linkoptions { "-fopenmp" }
         buildoptions { "-flto"}
-        linkoptions { "-flto"}
+        linkoptions { "-flto=auto"}
     
 if _PREMAKE_VERSION >="5.0" then
     configuration { "windows", "codeblocks" }
@@ -238,55 +238,14 @@ for i, name in ipairs(tutosM2) do
 end
 
 
-project("bench")
-	language "C++"
-	kind "ConsoleApp"
-	targetdir "bin"
-	files ( gkit_files )
-	files { gkit_dir .. "/tutos/bench/bench.cpp" }
-	
-project("benchv2")
-	language "C++"
-	kind "ConsoleApp"
-	targetdir "bin"
-	files ( gkit_files )
-	files { gkit_dir .. "/tutos/bench/benchv2.cpp" }
-	
 project("benchv3")
 	language "C++"
 	kind "ConsoleApp"
 	targetdir "bin"
 	files ( gkit_files )
 	files { gkit_dir .. "/tutos/bench/benchv3.cpp" }
-	
-project("bench_filter")
-	language "C++"
-	kind "ConsoleApp"
-	targetdir "bin"
-	files ( gkit_files )
-	files { gkit_dir .. "/tutos/bench/bench_filter.cpp" }
-		
-project("bench_trace")
-	language "C++"
-	kind "ConsoleApp"
-	targetdir "bin"
-	files ( gkit_files )
-	files { gkit_dir .. "/tutos/bench/bench_trace.cpp" }
-	
-project("bench_scene")
-	language "C++"
-	kind "ConsoleApp"
-	targetdir "bin"
-	files ( gkit_files )
-	files { gkit_dir .. "/tutos/bench/bench_scene.cpp" }
-	
-project("bench_setup")
-	language "C++"
-	kind "ConsoleApp"
-	targetdir "bin"
-	files ( gkit_files )
-	files { gkit_dir .. "/tutos/bench/bench_setup.cpp" }
-        
+
+
 project("gltf")
 	language "C++"
 	kind "ConsoleApp"
