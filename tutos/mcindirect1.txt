@@ -149,10 +149,10 @@ voila néanmoins quelques résultats pour N= 1, 4, 16, 64
 </center>
 
 __argh !!__ comme prévu le résultat n'est pas très intéressant, même si les images sont correctes et que l'estimateur finira par converger... 
-par exemple avec N= 4096, 16384, mais le temps de calcul n'est pas très raisonnable...
+par exemple avec N= 1024, 4096, mais le temps de calcul n'est pas très raisonnable...
 <center>
     <table style="width=100%;border=0px">
-        <tr><td><IMG SRC="cornell_indirect0-4096.png" width="100%"> <td><IMG SRC="cornell_indirect0-16384.png" width="100%"></tr>
+        <tr><td><IMG SRC="cornell_indirect0-1024.png" width="100%"> <td><IMG SRC="cornell_indirect0-4096.png" width="100%"></tr>
     </table>
 </center>
 
