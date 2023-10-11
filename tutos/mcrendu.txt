@@ -31,8 +31,8 @@ la démarche est toujours la même, on part de l'intégration à calculer et on 
 mais on se retrouve avec le même problème : on vient de remplacer la variable de l'intégration par une variable aléatoire et il faut 
 définir sa densité de proba \f$ p( \vec{l} ) \f$ et savoir générer des directions en fonction de cette densité...
 
-sans rentrer dans les détails, l'idée est de re-écrire l'intégration en utilisant les angles \f$ (\theta, \phi) \f$ pour décrire une direction sur \f$ \Omega \f$,
-ce qui permet de faire apparaitre les 2 angles qui représentent une direction \f$ \vec{l}(\theta, \phi ) \f$ dans l'hemisphère. 
+sans rentrer dans les détails, l'idée est de changer de variable dans l'intégration sur l'hémisphère en utilisant les angles \f$ (\theta, \phi) \f$ 
+pour décrire une direction sur \f$ \Omega \f$, ce qui permet de faire apparaitre les 2 angles qui représentent une direction \f$ \vec{l} \f$ : 
 \f[
 \begin{eqnarray*}
    & & \int_{\Omega} f(\vec{l}) \cos \theta \, dl\\
@@ -42,7 +42,8 @@ ce qui permet de faire apparaitre les 2 angles qui représentent une direction \
 
 ensuite, il faut construire les 2 densités de proba, 
 celles de \f$ \theta \f$ et \f$ \phi \f$, puis leurs fonctions de répartition et enfin les inverser pour générer une direction en utilisant 2 nombres 
-aléatoires uniformes \f$ u_1, u_2 \f$ compris entre 0 et 1.
+aléatoires uniformes \f$ u_1, u_2 \f$ compris entre 0 et 1. un exemple plus simple (en 1d) est présenté dans 
+\ref mc section "générer des points avec une densité de proba continue..."
 
 par exemple, on peut construire une direction uniforme \f$ \vec{v} \f$ sur \f$ \Omega \f$ avec :
 \f[

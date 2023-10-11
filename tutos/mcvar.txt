@@ -5,7 +5,7 @@
 des erreurs assez importantes peuvent être visibles dans l'image, cf \ref mcrendu. on a également constaté que la densité de proba utilisée pouvait 
 avoir une influence importante sur ces erreurs, cf \ref mcdirect.
 
-du coup, on peut se demander : _comment choisir les bons paramètres ?_ le nombre d'échantillons et leur densité de proba ?
+_comment choisir les bons paramètres ?_ le nombre d'échantillons et leur densité de proba ?
 
 vu que tout ça est basé sur des proba, et que l'on construit une variable aléatoire pour estimer l'intégrale, on peut  se rendre compte
 que l'estimateur lui même est aussi une variable aléatoire (!!) et que l'on peut estimer plusieurs choses : son espérance, bien sur, on vient de la calculer, 
@@ -51,14 +51,14 @@ et on obtient enfin un résultat utilisable :
 \f]
 
 __et alors ?__ ben maintenant, on est à peu près sur que la variance de l'estimateur décroit vers 0 lorsque le nombre d'échantillons croit vers l'infini, 
-on déjà constaté ce comportement dans tous les exemples d'intégration numérique, on peut même prédire à quelle vitesse la variance décroit.
+on a déjà constaté ce comportement dans tous les exemples d'intégration numérique, on peut même prédire à quelle vitesse la variance décroit.
 
 __ah ? mais la densité de proba à aussi une influence non ?__ oui, bien sur, il suffit de réécrire tout ça pour une fonction d'une variable aléatoire \f$ x \f$ :
 \f[
 	V[I_N]= \frac{1}{N} V \left[ \frac{f(x)}{p(x)} \right]
 \f]
 
-\f$ f \f$ est fixé, on ne peut pas vraiment la modifier, c'est la lumière qui se propage dans la scène, par contre si on change \f$ p \f$, on doit pouvoir observer 
+\f$ f \f$ est fixé, on ne peut pas vraiment la modifier, c'est la lumière qui se propage dans la scène, par contre, si on change \f$ p \f$, on doit pouvoir observer 
 une différence... par exemple, si \f$ p \f$ est exactement proportionnelle à \f$ f \f$, ie \f$ p(x)= c f(x)\f$ avec une constante quelconque, on arrive à un résultat 
 un peu bizarre :
 \f[
@@ -83,7 +83,7 @@ ie pour réduire la variance par 2, on peut soit faire 2 fois plus de calculs, s
 plus petite... 
 	
 on peut bien sur simplement calculer des series d'images avec des densités de proba différentes et garder la meilleure, mais on a quand même un indice 
-sur une 'bonne' densité de proba, elle doit être, au moins à peu près, proportionnelle à la fonction intégrée... et c'est bien ce que l'avait observé 
+sur une 'bonne' densité de proba, elle doit être, au moins à peu près, proportionnelle à la fonction intégrée... et c'est bien ce que l'on avait observé 
 dans \ref mc en intégrant \f$ \cos \f$ avec une densité de proba décroissante, ie qui varie à peu près de la même manière que \f$ \cos \f$, revoila quelques
 réalisations des 2 estimateurs : avec une densité de proba constante ou pas :
 <center> 
@@ -95,9 +95,13 @@ réalisations des 2 estimateurs : avec une densité de proba constante ou pas :
 plus la variance est faible, plus les réalisations de l'estimateur sont concentrées / regroupées autour de l'espérance, c'est bien ce que l'on observe...
 et pour un même nombre de calculs, ou d'échantillons, on observe bien que l'estimateur de droite à une plus petite variance que celui de gauche.
 
-_remarque :_ souvent on estime l'__erreur moyenne__, notée RMSE et pas la variance \f$ \sigma^2 \f$. pourquoi ? la variance n'a pas la même unité que la valeur 
-estimée, à cause du carré. voila l'_erreur moyenne_ de l'estimateur : RMSE=\f$ \frac{\sigma}{\sqrt N} \f$, et pour avoir une erreur 2 fois plus petite, il faut 
-faire 4 fois plus de calculs, à cause de \f$ \sqrt N \f$.
+_remarque :_ souvent on estime l'__erreur moyenne__, notée RMSE et pas la variance \f$ \sigma^2 \f$. _pourquoi ?_ la variance n'a pas la même unité que la valeur 
+estimée, à cause du carré. l'_erreur moyenne_ de l'estimateur s'écrit 
+\f[
+\mbox{RMSE}= \frac{\sigma}{\sqrt N} 
+\f]
+
+pour avoir une erreur 2 fois plus petite, il faut faire 4 fois plus de calculs, à cause de \f$ \sqrt N \f$.
 
 # variance en image...
 
@@ -123,7 +127,9 @@ pour une solution numérique correcte.
 
 
 on constate bien que lorsque la variance est importante, en blanc sur l'image du dessus, l'estimateur produit des défauts qui s'estompent en augmentant 
-le nombre de calculs par pixel, à gauche N= 4 et à droite N= 16. 
+le nombre de calculs par pixel, à gauche N= 4 et à droite N= 16. par exemple, le bruit sur les murs est beaucoup moins visible avec 16 échantillons qu'avec 4.
+les pénombres des cubes sont un peu mieux avec 16 échantillons, mais le bruit est toujours bien visible. il faudra faire plus de calcul pour obtenir une 
+estimation précise dans ces parties de l'image (ou _filtrer_ avec un plus gros support...)
 
 _remarque :_ oui, faire 4 fois plus de calculs permet de diminuer visiblement l'erreur moyenne RMSE de l'estimateur. mais c'est aussi 4 fois plus long...
 
