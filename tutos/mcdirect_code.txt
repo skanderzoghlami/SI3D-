@@ -268,7 +268,7 @@ au final, c'est assez direct en ré-utilisant les fragments de code précédents
 			// dans un repere local... il manque une transformation vers la scène...
             
             // evalue la pdf
-            pdf= 1 / (2*M_PI);
+            pdf= 1 / float(2*M_PI);
         }
         
         // verifie la visibilité de la lumière / du ciel dans la direction l
@@ -357,7 +357,7 @@ __et voila !__ on a tous les éléments pour calculer l'image, il suffit de modi
             l= world( Vector(std::cos(phi) * sin_theta, std::sin(phi) * sin_theta, cos_theta) );
             
             // evalue la pdf
-            pdf= 1 / (2*M_PI);
+            pdf= 1 / float(2*M_PI);
         }
         
         // verifie la visibilité de la lumière / du ciel dans la direction l
@@ -409,7 +409,7 @@ connaissant le point \f$ q \f$ et sa densité, comment évaluer la fonction int�
 il reste \f$ L_i(p, q) \f$, la lumière émise par q qui éclaire p, c'est tout simplement l'emission de la source de lumière que l'on a choisit pour générer q. 
 le dernier terme, la visibilité entre p et q s'évalue directement en vérifiant l'existence d'une intersection sur le rayon entre p et q.
 
-_exercice pour les curieux :_ comment utiliser l'autre solution présentée dans \ref mcdirect, ie choisir une source en fonction de son aire ? qu'est ce qu'il change ?
+_exercice pour les curieux :_ comment utiliser l'autre solution présentée dans \ref mcdirect, ie choisir une source en fonction de son aire ? que faut-il modifier ?
 
 on va aussi simplifier la représentation des sources : ce sont les triangles de la scène dont la matière émet de la lumière. on peut les décrire avec une 
 structure qui regroupe quelques propriétés utiles :
