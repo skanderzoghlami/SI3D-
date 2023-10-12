@@ -347,16 +347,33 @@ que l'on peut schématiser :
 - pour L1, on intègre le direct en p1 avec N points sur les sources { s } :
 <center> <IMG SRC="eqindirect_L1_schema.png" width="40%"> </center> 
 
-- pour L2, on intègre le direct en p2 avec N points sur les sources { s }, puis on intègre les rebonds avec N directions vers les points { p1 }, et en chaque point p1, on 
-évalue le direct avec un seul point sur les sources :
+- pour L2, on intègre le direct en p2 avec N points sur les sources { s }, puis on intègre les rebonds avec N directions vers les points { p1 }, 
+et en chaque point p1, on évalue le direct avec un seul point sur les sources :
 <center> <IMG SRC="eqindirect_L2_schema.png" width="40%"> </center> 
 
-- et L3, le direct en p3 puis les rebonds avec N directions vers les points { p2 }, puis pour chaque point p2, on évalue son direct avec un point, puis on génère une direction, 
-on trouve le point p1, on évalue son direct avec un seul point :
+- et L3, le direct en p3 puis les rebonds avec N directions vers les points { p2 }, puis pour chaque point p2, on évalue son direct avec un point, 
+puis on génère une direction, on trouve le point p1, on évalue son direct avec un seul point :
 <center> <IMG SRC="eqindirect_L3_schema.png" width="40%"> </center> 
 
 oui, c'est répétitif, ça tombe bien : on va pouvoir ré-utiliser les mêmes fonctions que tout à l'heure, `direct1()` et `indirect1()` pour estimer tout ça !!
 
+__euh ? mais pourquoi ?__ faut-il vraiment faire tous ces calculs ? 
+selon où se trouvent les sources de lumières, il faut parfois simuler plusieurs rebonds pour éclairer toutes les parties de la scène. par exemple, si on décolle 
+la source du plafond et qu'on la retourne, pour éclairer le plafond plutôt que le sol. 
+
+voici L1, l'éclairage direct (à gauche) et L2, l'éclairage indirect avec 1 rebond (à droite) pour N= 64 :
+<center>
+    <table style="width=100%;border=0px">
+        <tr><td><IMG SRC="cornell2_direct-0064.png" width="100%"> <td><IMG SRC="cornell2_indirect1-0064.png" width="100%"></tr>
+    </table>
+</center>
+il n'est pas très naturel d'observer une ombre parfaitement noire sur les cotés des cubes... il faut simuler au moins un rebond de plus.
+
+voici L3, avec 2 rebonds pour N= 64 :
+<center> <IMG SRC="cornell2_path-0064.png" width="100%"> </center>
+
+on peut aussi constater que l'image présente davantage de défauts : la simulation est plus complexe, et la variance est plus importante que pour simuler
+1 seul rebond dans la cornell box standard lorsque la source éclaire directement presque toutes les surfaces...
 
 # bilan
 
