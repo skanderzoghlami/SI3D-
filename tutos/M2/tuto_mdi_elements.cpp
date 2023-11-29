@@ -1,5 +1,5 @@
 
-//! tuto_mdi_elements.cpp exemple d'utilisation de multidrawelements().
+//! tuto_mdi_elements.cpp exemple d'utilisation de multidrawindirect pour des triangles indexes.
 
 #include "app_camera.h"
 
@@ -10,12 +10,12 @@
 #include "program.h"
 #include "uniforms.h"
 
-// representation des parametres de multidrawELEMENTS
+// representation des parametres de multidrawELEMENTSindirect
 struct IndirectParam
 {
     unsigned index_count;
     unsigned instance_count;
-    unsigned first_index;       // cf parametre offset de glDrawElements()
+    unsigned first_index;
     unsigned vertex_base;
     unsigned instance_base;
 };
@@ -28,20 +28,26 @@ public:
     
     int init( )
     {
+        // charge un objet indexe
         m_objet= read_indexed_mesh("data/robot.obj");
-
+        
         Point pmin, pmax;
         m_objet.bounds(pmin, pmax);
         m_camera.lookat(pmin, pmax);
         
-        // trie les triangles de l'objet par matiere.
+        // trie les triangles de l'objet par matiere. 
         std::vector<TriangleGroup> groups= m_objet.groups();
         
-        // parcours chaque groupe et construit les parametres du draw correspondant
-        /* on peut afficher les groupes avec glDrawElememnts
+        /* parcours chaque groupe et construit les parametres du draw correspondant
+            on peut afficher les groupes avec glDrawElememnts, comme d'habitude :
+            
+            glBindVertexArray(m_vao);
+            glUseProgram(m_program);
+            glUniform();
+            
             for(unsigned i= 0; i < groups.size(); i++)
                 glDrawElements(GL_TRIANGLES, /count/ groups[i].n, /type/ GL_UNSIGNED_INT, /offset/ groups[i].first * sizeof(unsigned));
-        
+            
             on peut remplir une structure IndirectParam par draw... et utiliser un seul appel a multidrawindirect
         */
         
@@ -49,11 +55,11 @@ public:
         for(unsigned i= 0; i < groups.size(); i++)
         {
             params.push_back({
-                groups[i].n,        // count
-                1,                  // instance_count
-                groups[i].first,    // first_index
-                0,                  // vertex_base, pas la peine de renumeroter les sommets
-                0                   // instance_base, pas d'instances
+                unsigned(groups[i].n),      // count
+                1,                          // instance_count
+                unsigned(groups[i].first),  // first_index
+                0,                          // vertex_base, pas la peine de renumeroter les sommets
+                0                           // instance_base, pas d'instances
             });
         }
         
@@ -71,7 +77,6 @@ public:
         m_program= read_program("tutos/M2/indirect_elements.glsl");
         program_print_errors(m_program);
         
-
         // etat openGL par defaut
         glClearColor(0.2f, 0.2f, 0.2f, 1.f);        // couleur par defaut de la fenetre
         
@@ -84,6 +89,7 @@ public:
     
     int quit( ) 
     {
+        // todo
         return 0;
     }
     
@@ -91,7 +97,7 @@ public:
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
-        // reupere les transformations
+        // recupere les transformations
         Transform model;
         Transform view= camera().view();
         Transform projection= camera().projection();
