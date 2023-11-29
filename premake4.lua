@@ -213,6 +213,7 @@ end
 tutosM2 = {
     "tuto_time",
     "tuto_mdi",
+    "tuto_mdi_elements",
     "tuto_mdi_count",
     "tuto_stream",
 
