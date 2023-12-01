@@ -21,28 +21,28 @@ int Mesh::create( const GLenum primitives )
 
 Mesh::Mesh( const GLenum primitives, const std::vector<vec3>& positions ) : 
     m_positions(), m_texcoords(), m_normals(), m_colors(), m_indices(), 
-    m_color(White()), m_primitives(GL_POINTS), m_vao(0), m_buffer(0), m_index_buffer(0), m_vertex_buffer_size(0), m_index_buffer_size(0), m_update_buffers(false) {}
+    m_color(White()), m_primitives(GL_POINTS), m_vao(0), m_buffer(0), m_index_buffer(0), m_vertex_buffer_size(0), m_index_buffer_size(0), m_update_buffers(false)
 {
     m_primitives= primitives;
     m_positions= positions;
 }
 
-int Mesh::Mesh( const GLenum primitives, const std::vector<vec3>& positions, const std::vector<unsigned>& indices ) : 
+Mesh::Mesh( const GLenum primitives, const std::vector<vec3>& positions, const std::vector<unsigned>& indices ) : 
     m_positions(), m_texcoords(), m_normals(), m_colors(), m_indices(), 
-    m_color(White()), m_primitives(GL_POINTS), m_vao(0), m_buffer(0), m_index_buffer(0), m_vertex_buffer_size(0), m_index_buffer_size(0), m_update_buffers(false) {}
+    m_color(White()), m_primitives(GL_POINTS), m_vao(0), m_buffer(0), m_index_buffer(0), m_vertex_buffer_size(0), m_index_buffer_size(0), m_update_buffers(false)
 {
     m_primitives= primitives;
     m_positions= positions;
     m_indices= indices;
 }
 
-int Mesh::Mesh( const GLenum primitives, const std::vector<vec3>& positions, 
+Mesh::Mesh( const GLenum primitives, const std::vector<vec3>& positions, 
     const std::vector<vec2>& texcoords, 
     const std::vector<vec3>& normals, 
     const std::vector<vec4>& colors, 
     const std::vector<unsigned>& indices ) : 
         m_positions(), m_texcoords(), m_normals(), m_colors(), m_indices(), 
-        m_color(White()), m_primitives(GL_POINTS), m_vao(0), m_buffer(0), m_index_buffer(0), m_vertex_buffer_size(0), m_index_buffer_size(0), m_update_buffers(false) {}
+        m_color(White()), m_primitives(GL_POINTS), m_vao(0), m_buffer(0), m_index_buffer(0), m_vertex_buffer_size(0), m_index_buffer_size(0), m_update_buffers(false)
 {
     m_primitives= primitives;
     m_positions= positions;
