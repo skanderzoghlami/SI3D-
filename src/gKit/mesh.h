@@ -123,6 +123,14 @@ public:
     
     //! construit les objets openGL.
     int create( const GLenum primitives );
+    int create( const GLenum primitives, const std::vector<vec3>& positions );
+    int create( const GLenum primitives, const std::vector<vec3>& positions, const std::vector<unsigned>& indices );
+    int create( const GLenum primitives, const std::vector<vec3>& positions, 
+        const std::vector<vec2>& texcoords, 
+        const std::vector<vec3>& normals, 
+        const std::vector<vec4>& colors, 
+        const std::vector<unsigned>& indices );
+    
     //! detruit les objets openGL.
     void release( );
     //@}

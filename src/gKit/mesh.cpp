@@ -19,6 +19,46 @@ int Mesh::create( const GLenum primitives )
     return 0;
 }
 
+int Mesh::create( const GLenum primitives, const std::vector<vec3>& positions )
+{
+    clear();
+    m_primitives= primitives;
+    m_positions= positions;
+    return 0;
+}
+
+int Mesh::create( const GLenum primitives, const std::vector<vec3>& positions, const std::vector<unsigned>& indices )
+{
+    clear();
+    m_primitives= primitives;
+    m_positions= positions;
+    m_indices= indices;
+    return 0;
+}
+
+int Mesh::create( const GLenum primitives, const std::vector<vec3>& positions, 
+    const std::vector<vec2>& texcoords, 
+    const std::vector<vec3>& normals, 
+    const std::vector<vec4>& colors, 
+    const std::vector<unsigned>& indices )
+{
+    clear();
+    if(texcoords.size() > 0 && texcoords.size() != positions.size()) return -1;
+    if(normals.size() > 0 && normals.size() != positions.size()) return -1;
+    if(colors.size() > 0 && colors.size() != positions.size()) return -1;
+    
+    m_primitives= primitives;
+    m_positions= positions;
+    m_indices= indices;
+    m_texcoords= texcoords;
+    m_normals= normals;
+    m_colors= colors;
+    
+    return 0;
+}
+
+
+
 void Mesh::release( )
 {
     printf("mesh release %d\n", m_vao);
