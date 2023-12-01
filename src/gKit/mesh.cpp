@@ -19,44 +19,43 @@ int Mesh::create( const GLenum primitives )
     return 0;
 }
 
-int Mesh::create( const GLenum primitives, const std::vector<vec3>& positions )
+Mesh::Mesh( const GLenum primitives, const std::vector<vec3>& positions ) : 
+    m_positions(), m_texcoords(), m_normals(), m_colors(), m_indices(), 
+    m_color(White()), m_primitives(GL_POINTS), m_vao(0), m_buffer(0), m_index_buffer(0), m_vertex_buffer_size(0), m_index_buffer_size(0), m_update_buffers(false) {}
 {
-    clear();
     m_primitives= primitives;
     m_positions= positions;
-    return 0;
 }
 
-int Mesh::create( const GLenum primitives, const std::vector<vec3>& positions, const std::vector<unsigned>& indices )
+int Mesh::Mesh( const GLenum primitives, const std::vector<vec3>& positions, const std::vector<unsigned>& indices ) : 
+    m_positions(), m_texcoords(), m_normals(), m_colors(), m_indices(), 
+    m_color(White()), m_primitives(GL_POINTS), m_vao(0), m_buffer(0), m_index_buffer(0), m_vertex_buffer_size(0), m_index_buffer_size(0), m_update_buffers(false) {}
 {
-    clear();
     m_primitives= primitives;
     m_positions= positions;
     m_indices= indices;
-    return 0;
 }
 
-int Mesh::create( const GLenum primitives, const std::vector<vec3>& positions, 
+int Mesh::Mesh( const GLenum primitives, const std::vector<vec3>& positions, 
     const std::vector<vec2>& texcoords, 
     const std::vector<vec3>& normals, 
     const std::vector<vec4>& colors, 
-    const std::vector<unsigned>& indices )
+    const std::vector<unsigned>& indices ) : 
+        m_positions(), m_texcoords(), m_normals(), m_colors(), m_indices(), 
+        m_color(White()), m_primitives(GL_POINTS), m_vao(0), m_buffer(0), m_index_buffer(0), m_vertex_buffer_size(0), m_index_buffer_size(0), m_update_buffers(false) {}
 {
-    clear();
-    if(texcoords.size() > 0 && texcoords.size() != positions.size()) return -1;
-    if(normals.size() > 0 && normals.size() != positions.size()) return -1;
-    if(colors.size() > 0 && colors.size() != positions.size()) return -1;
-    
     m_primitives= primitives;
     m_positions= positions;
     m_indices= indices;
-    m_texcoords= texcoords;
-    m_normals= normals;
-    m_colors= colors;
     
-    return 0;
+    // n'initialise les autres attributs que s'ils sont definis
+    if(texcoords.size() > 0 && texcoords.size() == positions.size()) 
+        m_texcoords= texcoords;
+    if(normals.size() > 0 && normals.size() == positions.size())
+        m_normals= normals;
+    if(colors.size() > 0 && colors.size() == positions.size())
+        m_colors= colors;
 }
-
 
 
 void Mesh::release( )

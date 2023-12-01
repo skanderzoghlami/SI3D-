@@ -121,11 +121,15 @@ public:
     Mesh( const GLenum primitives ) : m_positions(), m_texcoords(), m_normals(), m_colors(), m_indices(), 
         m_color(White()), m_primitives(primitives), m_vao(0), m_buffer(0), m_index_buffer(0), m_vertex_buffer_size(0), m_index_buffer_size(0), m_update_buffers(false) {}
     
-    //! construit les objets openGL.
+    //! construit les objets openGL. 
     int create( const GLenum primitives );
-    int create( const GLenum primitives, const std::vector<vec3>& positions );
-    int create( const GLenum primitives, const std::vector<vec3>& positions, const std::vector<unsigned>& indices );
-    int create( const GLenum primitives, const std::vector<vec3>& positions, 
+    
+    //! constructeur. a partir d'un ensemble de positions.
+    Mesh( const GLenum primitives, const std::vector<vec3>& positions );
+    //! constructeur. a partir d'un ensemble de positions indexees.
+    Mesh( const GLenum primitives, const std::vector<vec3>& positions, const std::vector<unsigned>& indices );
+    //! constructeur. a partir d'un ensemble de positions + attributs indexes.
+    Mesh( const GLenum primitives, const std::vector<vec3>& positions, 
         const std::vector<vec2>& texcoords, 
         const std::vector<vec3>& normals, 
         const std::vector<vec4>& colors, 
