@@ -1,5 +1,5 @@
 
-//! tuto_mdi_elements.cpp exemple d'utilisation de multidrawindirect pour des triangles indexes.
+//! tuto_mdi_elements_count.cpp exemple d'utilisation de multidrawindirect count pour des triangles indexes.
 
 #include "app_camera.h"
 
