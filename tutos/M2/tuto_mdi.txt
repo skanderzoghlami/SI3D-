@@ -20,10 +20,10 @@ paramètre à MultiDraw().
     // parametres pour MultiDrawArraysIndirect
     struct ArraysParam
     {
-        unsigned int vertex_count;
-        unsigned int instance_count;
-        unsigned int vertex_base;
-        unsigned int instance_base;
+        unsigned vertex_count;
+        unsigned instance_count;
+        unsigned vertex_base;
+        unsigned instance_base;
     };
 \endcode
 
@@ -34,7 +34,8 @@ MultiDrawArraysIndirect( GLenum primitives, std::vector<ArraysParam>& params )
     for(int i= 0; i < params.size(); i++)
         if(params[i].instance_count > 0)
             // draw instancie
-            glDrawArraysInstancedBaseInstance(primitives, params[i].vertex_base, params[i].vertex_count, params[i].instance_count, params[i].instance_base);
+            glDrawArraysInstancedBaseInstance(primitives, params[i].vertex_base, params[i].vertex_count, 
+				params[i].instance_count, params[i].instance_base);
         else
             // draw normal
             glDrawArray(primitives, params[i].vertex_base, params[i].vertex_count);
@@ -48,29 +49,42 @@ la structure est :
     // parametres pour MultiDrawElementsIndirect
     struct ElementsParam
     {
-        unsigned int index_count;
-        unsigned int instance_count;
-        unsigned int first_index;		// cf parametre offset de glDrawElements()
-        unsigned int vertex_base;
-        unsigned int instance_base;
+        unsigned index_count;
+        unsigned instance_count;
+        unsigned first_index;		// cf parametre offset de glDrawElements()
+        unsigned vertex_base;
+        unsigned instance_base;
     };
 \endcode
 
-
 Dernier détail, le tableau de structures doit être dans un buffer sélectionné sur `GL_DRAW_INDIRECT_BUFFER`.
 
-Le code d'exemple \ref tuto_mdi.cpp + \ref indirect.glsl transfere un tableau de ~1000 draws et permet de comparer le temps d'excécution des 2 solutions.
+Un code d'exemple direct est disponible dans \ref tuto_mdi_elements.cpp + \ref indirect_elements.glsl. il permet de dessiner tous les groupes d'un objet indexé en utilisant 
+glMultiDrawElementsIndirect() en remplissant un tableau de paramètres ElementsParam. 
+
+Un code d'exemple plus complet \ref tuto_mdi.cpp + \ref indirect.glsl transfere un tableau de ~1000 objets associés à une transformation model et permet de comparer 
+le temps d'exécution des 2 solutions : classique, 1 draw par objet et 1 multi draw pour l'ensemble d'objet.
 Voici les temps mesurés :
     - afficher ~1000 bigguy, avec 1000 glDrawArrays() : 10ms pour le cpu, <2ms pour le gpu,
     - glMultiDrawArraysIndirect(), 50us pour le cpu, <2ms pour le gpu...
 
-L'utilisation la plus interressante de MultiDraw() est de remplir le buffer directement sur la carte graphique avec un shader, ce qui évite de le transférer 
-à chaque affichage. Le (compute) shader peut, par exemple, faire quelques tests de visibilité et déterminer s'il est nécessaire de dessiner chaque objet.
+Comme prévu, l'utilisation du gpu ne change pas trop, la différence se trouve du cote du driver et de l'application...
 
-Mais, dans ce cas, un problème se pose : il faut connaitre, dans l'application, le nombre de commandes / d'objets à dessiner pour utiliser glMultiDrawArraysIndirect( )... 
+L'utilisation la plus interressante de MultiDraw() est de remplir le buffer directement sur la carte graphique avec un shader. Le (compute) shader peut, par exemple, 
+faire quelques tests de visibilité et déterminer s'il est nécessaire de dessiner chaque objet. Le nombre d'objets à dessiner se trouvera aussi dans un buffer. Les tests 
+de visibilité seront plus rapides que si l'application avait fait tous les tests, et le buffer est déjà sur la carte graphique, pret à etre utilisé par MultiDraw(). Alors que si l'application 
+fait les tests, il faut aussi transférer les résultats dans un buffer à chaque affichage. 
+
+Mais, dans ce cas, un problème se pose : il faut connaitre, dans l'application, le nombre de commandes / d'objets à dessiner pour utiliser MultiDraw( ), lorsque c'est
+un shader qui a construit le buffer, cette information n'est pas directement disponible pour l'application. bien sur, on peut relire le compteur dans l'application avec un glGetBufferData(), 
+mais cette solution à plusieurs inconvénients : 1/ relire un buffer est assez lent et 2/ plus subtil, on force la carte graphique à attendre que l'application relise le compteur avant 
+d'appeller MultiDraw(). 
+
 La solution est fournie par une variante de MultiDraw() : `glMultiDrawArraysIndirectCountARB( )`. Le nombre de commandes / d'objets à dessiner se trouve dans (une variable d) 
 un buffer sélectionné sur `GL_PARAMETER_BUFFER_ARB`. Cette fonction n'est pas encore standard, mais elle est disponible sur toutes les cartes graphiques. C'est 
-l'extension `GL_ARB_indirect_parameters` qui permet de l'utiliser.
+l'extension [`GL_ARB_indirect_parameters`](https://registry.khronos.org/OpenGL/extensions/ARB/ARB_indirect_parameters.txt) qui permet de l'utiliser.
+
+cf \ref tuto_mdi_elements_count.cpp pour un exemple direct qui ne dessine pas tous les groupes d'un objet. c'est une petite modification de l'exemple précédent \ref tuto_mdi_elements.cpp.
 
 cf \ref tuto_mdi_count.cpp + \ref indirect_cull.glsl + \ref indirect_remap.glsl pour un exemple complet, 
 avec un compute shader qui décide de dessiner un objet, ou pas, et qui comptabilise les objets à dessiner par `glMultiDrawArraysIndirectCountARB( )`.
