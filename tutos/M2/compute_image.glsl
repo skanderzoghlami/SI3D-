@@ -1,4 +1,6 @@
 
+//! \file compute_image.glsl compute shader + images
+
 #version 430
 
 #ifdef COMPUTE_SHADER
