@@ -1,6 +1,4 @@
 
-//! \file tuto_compute_image.cpp compute shader + images
-
 #include "image.h"
 #include "texture.h"
 

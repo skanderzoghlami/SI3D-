@@ -1,6 +1,4 @@
 
-//! \file compute_buffer.glsl exemple compute shader + buffers
-
 #version 430
 
 #ifdef COMPUTE_SHADER

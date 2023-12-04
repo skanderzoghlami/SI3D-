@@ -88,15 +88,22 @@ struct ReadBuffer : public App
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, m_gpu_buffer1);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_gpu_buffer2);
         
+        // execute le shader
         glUseProgram(m_program);
         glDispatchCompute(4, 1, 1);
         
+        // attends les resultats
         glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
 
+        // et maintenant comment on recupere les donnees qui se trouvent dans un buffer prive du gpu ?
+        // etape 1 : on commence par copier les donnees dans un buffer intermediaire qui est accessible a l'application, 
+        // ie pas un buffer prive, cf la creation des 2 types de buffers dans init()...
         glBindBuffer(GL_COPY_READ_BUFFER, m_read_buffer);
         glCopyBufferSubData(GL_SHADER_STORAGE_BUFFER, GL_COPY_READ_BUFFER, 0, 0, sizeof(int)*1024);
         
+        // etape 2 : on relit le contenu du buffer qui contient la copie des donnees 
     #ifdef USE_MAP
+        // soit avec map()
         printf("!! use map\n");
         
         int *tmp= (int *) glMapBuffer(GL_COPY_READ_BUFFER, GL_READ_ONLY);
@@ -108,6 +115,7 @@ struct ReadBuffer : public App
         glUnmapBuffer(GL_COPY_READ_BUFFER);
 
     #else
+        // soit avec getbuffer()
         printf("!! use get buffer\n");
         
         std::vector<int> tmp(1024);

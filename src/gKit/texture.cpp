@@ -73,12 +73,6 @@ GLuint make_flat_texture( const int unit, const int width, const int height, con
     return texture;
 }
 
-GLuint make_flat_depth_texture( const int unit, const int width, const int height, const GLenum texel_type )
-{
-    return make_flat_texture(unit, width, height, texel_type, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT);
-}
-
-
 GLuint make_texture( const int unit, const Image& im, const GLenum texel_type )
 {
     if(im == Image::error())

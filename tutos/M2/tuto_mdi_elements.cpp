@@ -39,11 +39,11 @@ public:
         std::vector<TriangleGroup> groups= m_objet.groups();
         
         /* parcours chaque groupe et construit les parametres du draw correspondant
-            on peut afficher les groupes avec glDrawElememnts, comme d'habitude :
+            on peut afficher les groupes avec glDrawElements, comme d'habitude :
             
             glBindVertexArray(m_vao);
             glUseProgram(m_program);
-            glUniform();
+            glUniform( ... );
             
             for(unsigned i= 0; i < groups.size(); i++)
                 glDrawElements(GL_TRIANGLES, /count/ groups[i].n, /type/ GL_UNSIGNED_INT, /offset/ groups[i].first * sizeof(unsigned));

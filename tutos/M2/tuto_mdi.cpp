@@ -17,13 +17,13 @@
 #include "text.h"
 
 
-// representation des parametres 
+// representation des parametres de multidrawARRAYS
 struct IndirectParam
 {
-    unsigned int vertex_count;
-    unsigned int instance_count;
-    unsigned int first_vertex;
-    unsigned int first_instance;
+    unsigned vertex_count;
+    unsigned instance_count;
+    unsigned first_vertex;
+    unsigned first_instance;
 };
 
 
