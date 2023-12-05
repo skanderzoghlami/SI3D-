@@ -21,7 +21,7 @@ struct Point
 {
     //! constructeur par defaut.
     Point( ) : x(0), y(0), z(0) {}
-    explicit Point( const float _x, const float _y, const float _z ) : x(_x), y(_y), z(_z) {}
+    Point( const float _x, const float _y, const float _z ) : x(_x), y(_y), z(_z) {}
 
     //! cree un point a partir des coordonnees du vecteur generique (v.x, v.y, v.z).
     Point( const vec2& v, const float z );   // l'implementation se trouve en fin de fichier, la structure vec3 n'est pas encore connue.
@@ -59,7 +59,7 @@ struct Vector
 {
     //! constructeur par defaut.
     Vector( ) : x(0), y(0), z(0) {}
-    explicit Vector( const float _x, const float _y, const float _z ) : x(_x), y(_y), z(_z) {}
+    Vector( const float _x, const float _y, const float _z ) : x(_x), y(_y), z(_z) {}
     
     //! cree le vecteur ab.
     explicit Vector( const Point& a, const Point& b ) : x(b.x - a.x), y(b.y - a.y), z(b.z - a.z) {}
@@ -131,7 +131,7 @@ struct vec2
 {
     //! constructeur par defaut.
     vec2( ) : x(0), y(0) {}
-    explicit vec2( const float _x, const float _y ) : x(_x), y(_y) {}
+    vec2( const float _x, const float _y ) : x(_x), y(_y) {}
     
     //! renvoie la ieme composante du vecteur.
     float operator() ( const unsigned int i ) const { return (&x)[i]; }
@@ -146,7 +146,7 @@ struct vec3
 {
     //! constructeur par defaut.
     vec3( ) : x(0), y(0), z(0) {}
-    explicit vec3( const float _x, const float _y, const float _z ) : x(_x), y(_y), z(_z) {}
+    vec3( const float _x, const float _y, const float _z ) : x(_x), y(_y), z(_z) {}
     //! constructeur par defaut.
     vec3( const vec2& a, const float _z ) : x(a.x), y(a.y), z(_z) {}
 
@@ -168,7 +168,7 @@ struct vec4
 {
     //! constructeur par defaut.
     vec4( ) : x(0), y(0), z(0), w(0) {}
-    explicit vec4( const float _x, const float _y, const float _z, const float _w ) : x(_x), y(_y), z(_z), w(_w) {}
+    vec4( const float _x, const float _y, const float _z, const float _w ) : x(_x), y(_y), z(_z), w(_w) {}
     //! constructeur par defaut.
     vec4( const vec2& v, const float _z= 0, const float _w= 0 ) : x(v.x), y(v.y), z(_z), w(_w) {}
     //! constructeur par defaut.
