@@ -21,6 +21,10 @@
 #include "mat.h"
 #include "orbiter.h"
 
+#include "color.h"
+#include "image.h"
+#include "image_hdr.h"
+
 #include "text.h"
 #include "widgets.h"
 
@@ -239,6 +243,7 @@ int draw( void )
     // etat 
     static float time= 0;
     static int frame= 0;
+    static int zbuffer= 0;
     static int video= 0;
     static int freeze= 0;
     static int reset_camera= 0;
@@ -302,10 +307,10 @@ int draw( void )
         program_uniform(program, "mouse", vec3(mousex, window_height() - mousey -1, mb & SDL_BUTTON(1)));
         
         // textures
-        for(int i= 0; i < int(textures.size()); i++)
+        for(unsigned i= 0; i < textures.size(); i++)
         {
             char uniform[1024];
-            sprintf(uniform, "texture%d", i);
+            sprintf(uniform, "texture%u", i);
             program_use_texture(program, uniform, i, textures[i]);
         }
         
@@ -324,7 +329,8 @@ int draw( void )
     }
     else
     {
-        button(widgets, "[s] screenshot ", frame);
+        button(widgets, "[s] screenshot ", frame); 
+        button(widgets, "[z] depth screenshot", zbuffer);
         button(widgets, "capture frames", video);
         begin_line(widgets);
         button(widgets, "[t] freeze time", freeze);
@@ -341,7 +347,7 @@ int draw( void )
             label(widgets, "mesh '%s', %d vertices %s %s", mesh_filename, mesh.vertex_count(),
                 mesh.texcoord_buffer_size() ? "texcoords" : "", mesh.normal_buffer_size() ? "normals" : "");
         }
-        for(unsigned int i= 0; i < (unsigned int) texture_filenames.size(); i++)
+        for(unsigned i= 0; i < texture_filenames.size(); i++)
         {
             begin_line(widgets);
             label(widgets, "texture%u '%s'", i, texture_filenames[i]);
@@ -350,9 +356,49 @@ int draw( void )
     }
     
     end(widgets);
+
+
+    if(zbuffer || key_state('z'))
+    {
+        frame= 0;
+        clear_key_state('z');
+        
+        printf("zbuffer screenshot...\n");
+        
+        Image image(window_width(), window_height());
+        std::vector<float> tmp(image.width() * image.height());
+        
+        glReadBuffer(GL_BACK);
+        glReadPixels(0, 0, image.width(), image.height(), GL_DEPTH_COMPONENT, GL_FLOAT, tmp.data());
+        
+        for(unsigned i= 0; i < image.size(); i++)
+            image(i)= Color(tmp[i]);
+        
+        write_image_pfm(image, "zbuffer_viewport.pfm");
+        
+        // transformation dans le repere camera
+        Transform inv= Inverse( viewport * projection );
+        for(int py= 0; py < image.height(); py++)
+        for(int px= 0; px < image.width(); px++)
+        {
+            int i= py * image.width() + px;
+            Point fragment= Point(float(px) + float(0.5), float(py) + float(0.5), tmp[i]);
+            Point p= inv( fragment );
+            
+            //~ image(i)= Color(std::abs(p.z)); // enregistre une valeur positive
+            image(i)= Color(p.z); // ou pas
+        }
+        
+        write_image_pfm(image, "zbuffer_camera.pfm");
+        
+        for(unsigned i= 0; i < image.size(); i++)
+            image(i)= Color(std::abs(image(i).r));
+        
+        write_image_pfm(image, "zbuffer_color.pfm");
+    }
     
+    // 
     draw(widgets, window_width(), window_height());
-    
     
     if(frame || key_state('s'))
     {
@@ -362,7 +408,7 @@ int draw( void )
         static int calls= 1;
         printf("screenshot %d...\n", calls);
         screenshot("shader_kit", calls++);
-    }
+    }    
     
     if(video) 
         capture("shader_kit");
