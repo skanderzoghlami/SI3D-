@@ -360,17 +360,22 @@ int draw( void )
 
     if(zbuffer || key_state('z'))
     {
-        frame= 0;
+        zbuffer= 0;
         clear_key_state('z');
+        
+        frame= 1;   // force un screenshot en meme temps
+        copy_camera= 1; // idem pour l'orbiter
         
         printf("zbuffer screenshot...\n");
         
+        // recupere le zbuffer
         Image image(window_width(), window_height());
         std::vector<float> tmp(image.width() * image.height());
         
         glReadBuffer(GL_BACK);
         glReadPixels(0, 0, image.width(), image.height(), GL_DEPTH_COMPONENT, GL_FLOAT, tmp.data());
         
+        // conversion en image
         for(unsigned i= 0; i < image.size(); i++)
             image(i)= Color(tmp[i]);
         
@@ -385,12 +390,12 @@ int draw( void )
             Point fragment= Point(float(px) + float(0.5), float(py) + float(0.5), tmp[i]);
             Point p= inv( fragment );
             
-            //~ image(i)= Color(std::abs(p.z)); // enregistre une valeur positive
-            image(i)= Color(p.z); // ou pas
+            image(i)= Color(p.z);
         }
         
         write_image_pfm(image, "zbuffer_camera.pfm");
         
+        // exporte une image avec un z positif...
         for(unsigned i= 0; i < image.size(); i++)
             image(i)= Color(std::abs(image(i).r));
         
