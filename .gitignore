@@ -1,10 +1,11 @@
 bin/*.dll
 bin/*.exe
 bin/*.pdb
-build
 *.make
 *.cbp
-
+build
 *.workspace
 
 Makefile
+
+bistro-small

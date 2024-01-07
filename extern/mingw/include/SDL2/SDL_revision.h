@@ -1,0 +1,2 @@
+#define SDL_REVISION "https://github.com/msys2/MINGW-packages@7ad345233ee7d71398822d9883b7c885e20e8a18 c8553d89b146c02c47169f06af7a087d277d1c06"
+#define SDL_REVISION_NUMBER 0

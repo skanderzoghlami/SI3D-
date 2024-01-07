@@ -95,7 +95,13 @@ end
 projects = {
     "base"
 }
-
+local projects = {
+    "base",
+    "TP3P2",
+    "TP3P3",
+    "TP2P2",
+    "TP2P3",
+}
 for i, name in ipairs(projects) do
     project(name)
         language "C++"

@@ -22,11 +22,12 @@ struct Material
     int specular_texture;        //!< indice de la texture, ou -1.
     int emission_texture;        //!< indice de la texture, ou -1.
     int ns_texture;             //!< indice de la texture de reflet, ou -1.
+
     
     //! constructeur par defaut. noir.
-    Material( ) : diffuse(), specular(), emission(), ns(0), diffuse_texture(-1), specular_texture(-1), emission_texture(-1), ns_texture(-1) {}
+    Material() : diffuse(), specular(), emission(), ns(0), diffuse_texture(-1), specular_texture(-1), emission_texture(-1), ns_texture(-1){}
     //! matiere diffuse.
-    Material( const Color& color ) : diffuse(color), specular(), emission(), ns(0), diffuse_texture(-1), specular_texture(-1), emission_texture(-1), ns_texture(-1) {}
+    Material(const Color& color) : diffuse(color), specular(), emission(), ns(0), diffuse_texture(-1), specular_texture(-1), emission_texture(-1), ns_texture(-1){}
 };
 
 

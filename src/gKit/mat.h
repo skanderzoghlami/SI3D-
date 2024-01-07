@@ -30,6 +30,7 @@ struct Transform
     Transform( const Vector& x, const Vector& y, const Vector& z, const Vector& w );
     //! constructeur a partir de 4 colonnes
     Transform( const vec4& x, const vec4& y, const vec4& z, const vec4& w );
+
     
     //! initialise une colonne de la matrice a partir de 4 floats.
     Transform& column( const unsigned id, const float t0, const float t1, const float t2, const float t3 );
